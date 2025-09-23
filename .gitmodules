@@ -1,0 +1,3 @@
+[submodule "Drivers/STM32-ILI9341"]
+	path = Drivers/STM32-ILI9341
+	url = https://github.com/phuwit/STM32-ILI9341.git
