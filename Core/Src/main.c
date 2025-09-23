@@ -23,6 +23,11 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
+#include "ili9341.h"
+#include "ili9341_fonts.h"
+
+#include "images.h"
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -123,6 +128,31 @@ int main(void)
   MX_SPI5_Init();
   /* USER CODE BEGIN 2 */
 
+  ILI9341_HandleTypeDef lcd = ILI9341_Init(&hspi5, LCD_CS_GPIO_Port, LCD_CS_Pin, LCD_DC_GPIO_Port, LCD_DC_Pin, LCD_RST_GPIO_Port, LCD_RST_Pin, ILI9341_ROTATION_HORIZONTAL_2, 320, 240);
+  ILI9341_FillScreen(&lcd, ILI9341_COLOR_WHITE);
+
+  // header
+  ILI9341_WriteString(&lcd, 12, 12, "TAO888", ILI9341_Font_Terminus12x24b, ILI9341_COLOR_BLACK, ILI9341_COLOR_WHITE, 0);
+  ILI9341_WriteString(&lcd, 320 - 80 - 12, 6, "YOU WIN!", ILI9341_Font_Terminus10x18b, ILI9341_COLOR_BLACK, ILI9341_COLOR_WHITE, 0);
+  ILI9341_WriteString(&lcd, 320 - 90 - 12, 24, "24 Tokens", ILI9341_Font_Terminus10x18, ILI9341_COLOR_BLACK, ILI9341_COLOR_WHITE, 0);
+
+  // content
+  for(int row = 0; row < 3; row += 1) {
+    for(int col = 0; col < 5; col += 1) {
+      ILI9341_DrawImage(&lcd, 8 + (col * 64), 56 + (row * 64), CHERRY_BLACKOUTLINE_ONWHITE.width, CHERRY_BLACKOUTLINE_ONWHITE.height, CHERRY_BLACKOUTLINE_ONWHITE.data);
+    }
+  }
+
+  // horz line
+  for(int yOffset = 0; yOffset <= 2; yOffset += 1) {
+    ILI9341_DrawLine(&lcd, 0, 48 + (64 * yOffset), 320, 48 + (64 * yOffset), ILI9341_COLOR_BLACK);
+  }
+
+  // vert line
+  for(int xOffset = 1; xOffset <= 4; xOffset += 1) {
+    ILI9341_DrawLine(&lcd, (64 * xOffset), 48 + (64 * 0), (64 * xOffset), 240, ILI9341_COLOR_BLACK);
+  }
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -132,6 +162,7 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+    // ILI9341_FillCircle(&lcd, 24, 24, 12, ILI9341_COLOR_CYAN);
   }
   /* USER CODE END 3 */
 }
@@ -261,7 +292,7 @@ static void MX_SPI5_Init(void)
   hspi5.Instance = SPI5;
   hspi5.Init.Mode = SPI_MODE_MASTER;
   hspi5.Init.Direction = SPI_DIRECTION_2LINES;
-  hspi5.Init.DataSize = SPI_DATASIZE_4BIT;
+  hspi5.Init.DataSize = SPI_DATASIZE_8BIT;
   hspi5.Init.CLKPolarity = SPI_POLARITY_LOW;
   hspi5.Init.CLKPhase = SPI_PHASE_1EDGE;
   hspi5.Init.NSS = SPI_NSS_SOFT;
@@ -377,7 +408,7 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(GPIOB, LD1_Pin|LD3_Pin|LD2_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOG, LCD_RESET_Pin|LCD_CS_Pin|USB_PowerSwitchOn_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOG, LCD_RST_Pin|LCD_CS_Pin|USB_PowerSwitchOn_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(LCD_DC_GPIO_Port, LCD_DC_Pin, GPIO_PIN_RESET);
@@ -395,8 +426,8 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : LCD_RESET_Pin LCD_CS_Pin USB_PowerSwitchOn_Pin */
-  GPIO_InitStruct.Pin = LCD_RESET_Pin|LCD_CS_Pin|USB_PowerSwitchOn_Pin;
+  /*Configure GPIO pins : LCD_RST_Pin LCD_CS_Pin USB_PowerSwitchOn_Pin */
+  GPIO_InitStruct.Pin = LCD_RST_Pin|LCD_CS_Pin|USB_PowerSwitchOn_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;

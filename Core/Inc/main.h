@@ -75,8 +75,8 @@ void Error_Handler(void);
 #define RMII_RXD1_GPIO_Port GPIOC
 #define LD1_Pin GPIO_PIN_0
 #define LD1_GPIO_Port GPIOB
-#define LCD_RESET_Pin GPIO_PIN_0
-#define LCD_RESET_GPIO_Port GPIOG
+#define LCD_RST_Pin GPIO_PIN_0
+#define LCD_RST_GPIO_Port GPIOG
 #define LCD_CS_Pin GPIO_PIN_1
 #define LCD_CS_GPIO_Port GPIOG
 #define RMII_TXD1_Pin GPIO_PIN_13
