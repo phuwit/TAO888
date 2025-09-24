@@ -1,10 +1,13 @@
+#ifndef TAO888_IMAGES
+#define TAO888_IMAGES
+
 #include <stdint.h>
 
 typedef struct {
   const uint16_t *data;
   uint16_t width;
   uint16_t height;
-} image_t;
+} Image_t;
 
 const uint16_t CHERRY_BLACKOUTLINE_ONWHITE_BYTES[] = {
     0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF,
@@ -201,4 +204,6 @@ const uint16_t CHERRY_BLACKOUTLINE_ONWHITE_BYTES[] = {
     0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF,
 };
 
-const image_t CHERRY_BLACKOUTLINE_ONWHITE = { CHERRY_BLACKOUTLINE_ONWHITE_BYTES, 48, 48 };
+const Image_t CHERRY_BLACKOUTLINE_ONWHITE = { CHERRY_BLACKOUTLINE_ONWHITE_BYTES, 48, 48 };
+
+#endif
