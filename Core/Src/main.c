@@ -18,18 +18,19 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "frameBuffer.h"
-#include "stm32f7xx_hal.h"
 #include "string.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
+#include <stdbool.h>
+#include <stdint.h>
+
 #include "ili9341.h"
 #include "ili9341_fonts.h"
 
 #include "images.h"
-#include <stdint.h>
+#include "frameBuffer.h"
 
 /* USER CODE END Includes */
 
@@ -49,27 +50,21 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
-#if defined(__ICCARM__) /*!< IAR Compiler */
-#pragma location = 0x2007c000
-ETH_DMADescTypeDef
-    DMARxDscrTab[ETH_RX_DESC_CNT]; /* Ethernet Rx DMA Descriptors */
-#pragma location = 0x2007c0a0
-ETH_DMADescTypeDef
-    DMATxDscrTab[ETH_TX_DESC_CNT]; /* Ethernet Tx DMA Descriptors */
+#if defined ( __ICCARM__ ) /*!< IAR Compiler */
+#pragma location=0x2007c000
+ETH_DMADescTypeDef  DMARxDscrTab[ETH_RX_DESC_CNT]; /* Ethernet Rx DMA Descriptors */
+#pragma location=0x2007c0a0
+ETH_DMADescTypeDef  DMATxDscrTab[ETH_TX_DESC_CNT]; /* Ethernet Tx DMA Descriptors */
 
-#elif defined(__CC_ARM) /* MDK ARM Compiler */
+#elif defined ( __CC_ARM )  /* MDK ARM Compiler */
 
-__attribute__((at(0x2007c000))) ETH_DMADescTypeDef
-    DMARxDscrTab[ETH_RX_DESC_CNT]; /* Ethernet Rx DMA Descriptors */
-__attribute__((at(0x2007c0a0))) ETH_DMADescTypeDef
-    DMATxDscrTab[ETH_TX_DESC_CNT]; /* Ethernet Tx DMA Descriptors */
+__attribute__((at(0x2007c000))) ETH_DMADescTypeDef  DMARxDscrTab[ETH_RX_DESC_CNT]; /* Ethernet Rx DMA Descriptors */
+__attribute__((at(0x2007c0a0))) ETH_DMADescTypeDef  DMATxDscrTab[ETH_TX_DESC_CNT]; /* Ethernet Tx DMA Descriptors */
 
-#elif defined(__GNUC__) /* GNU Compiler */
+#elif defined ( __GNUC__ ) /* GNU Compiler */
 
-ETH_DMADescTypeDef DMARxDscrTab[ETH_RX_DESC_CNT] __attribute__((
-    section(".RxDecripSection"))); /* Ethernet Rx DMA Descriptors */
-ETH_DMADescTypeDef DMATxDscrTab[ETH_TX_DESC_CNT] __attribute__((
-    section(".TxDecripSection"))); /* Ethernet Tx DMA Descriptors */
+ETH_DMADescTypeDef DMARxDscrTab[ETH_RX_DESC_CNT] __attribute__((section(".RxDecripSection"))); /* Ethernet Rx DMA Descriptors */
+ETH_DMADescTypeDef DMATxDscrTab[ETH_TX_DESC_CNT] __attribute__((section(".TxDecripSection")));   /* Ethernet Tx DMA Descriptors */
 #endif
 
 ETH_TxPacketConfig TxConfig;
@@ -77,6 +72,7 @@ ETH_TxPacketConfig TxConfig;
 ETH_HandleTypeDef heth;
 
 SPI_HandleTypeDef hspi5;
+DMA_HandleTypeDef hdma_spi5_tx;
 
 UART_HandleTypeDef huart3;
 
@@ -84,13 +80,18 @@ PCD_HandleTypeDef hpcd_USB_OTG_FS;
 
 /* USER CODE BEGIN PV */
 
-uint8_t animOffset = 0;
+int8_t scrollAmount = -8;
+
+FrameBuffer_t frameBuffers[5];
+
+volatile bool spi5Transferable = true;
 
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
+static void MX_DMA_Init(void);
 static void MX_ETH_Init(void);
 static void MX_USART3_UART_Init(void);
 static void MX_USB_OTG_FS_PCD_Init(void);
@@ -105,10 +106,11 @@ static void MX_SPI5_Init(void);
 /* USER CODE END 0 */
 
 /**
- * @brief  The application entry point.
- * @retval int
- */
-int main(void) {
+  * @brief  The application entry point.
+  * @retval int
+  */
+int main(void)
+{
 
   /* USER CODE BEGIN 1 */
 
@@ -116,8 +118,7 @@ int main(void) {
 
   /* MCU Configuration--------------------------------------------------------*/
 
-  /* Reset of all peripherals, Initializes the Flash interface and the Systick.
-   */
+  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
   HAL_Init();
 
   /* USER CODE BEGIN Init */
@@ -133,6 +134,7 @@ int main(void) {
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_DMA_Init();
   MX_ETH_Init();
   MX_USART3_UART_Init();
   MX_USB_OTG_FS_PCD_Init();
@@ -142,12 +144,11 @@ int main(void) {
   ILI9341_HandleTypeDef lcd = ILI9341_Init(
       &hspi5, LCD_CS_GPIO_Port, LCD_CS_Pin, LCD_DC_GPIO_Port, LCD_DC_Pin,
       LCD_RST_GPIO_Port, LCD_RST_Pin, ILI9341_ROTATION_HORIZONTAL_2, 320, 240);
-  ILI9341_SetOrientation(&lcd, ILI9341_ROTATION_HORIZONTAL_2, 1);
-  ILI9341_FillScreen(&lcd, ILI9341_COLOR_WHITE);
 
-  FrameBuffer_t frameBuffer =
-      TAO888_FrameBuffer_Initialize(0, 48, 64 * 5, 64 * 3, 64, 0, 0, 0);
-  TAO888_FrameBuffer_Fill(&frameBuffer, ILI9341_COLOR_WHITE);
+  // ILI9341_SetOrientation(&lcd, ILI9341_ROTATION_HORIZONTAL_2, 1);
+  // ILI9341_FillRectangle(&lcd, 20, 20, 10, 10, ILI9341_COLOR_BLACK);
+
+  ILI9341_FillScreen(&lcd, ILI9341_COLOR_WHITE);
 
   // header
   ILI9341_WriteString(&lcd, 12, 12, "TAO888", ILI9341_Font_Terminus12x24b,
@@ -159,29 +160,49 @@ int main(void) {
                       ILI9341_Font_Terminus10x18, ILI9341_COLOR_BLACK,
                       ILI9341_COLOR_WHITE, 0);
 
-  // Draw all cherries into the framebuffer (rows 0-3)
-  for (int row = 0; row < 4; row++) {
-    for (int col = 0; col < 5; col++) {
-      TAO888_FrameBuffer_DrawImage(&frameBuffer, 8 + (col * 64), 8 + (row * 64),
-                                   CHERRY_BLACKOUTLINE_ONWHITE.width,
-                                   CHERRY_BLACKOUTLINE_ONWHITE.height,
-                                   CHERRY_BLACKOUTLINE_ONWHITE.data);
-      // TAO888_FrameBuffer_Commit(&frameBuffer, &lcd);
+  // vertical lines
+  for (int xOffset = 1; xOffset <= 4; xOffset++) {
+    ILI9341_DrawLine(&lcd, (xOffset * 64), 48, (xOffset * 64),
+                                240, ILI9341_COLOR_BLACK);
+  }
+
+  // horizontal lines
+  for (int yOffset = 0; yOffset <= 2; yOffset++) {
+    ILI9341_DrawLine(&lcd, 0, (yOffset * 64) + 48, 320,
+                                (yOffset * 64) + 48, ILI9341_COLOR_BLACK);
+  }
+
+  for (int i = 0; i < 5; i += 1) {
+    frameBuffers[i] = TAO888_FrameBuffer_Initialize((i * 64) + 1, 48, 63, 64 * 3, 64, 0, 0, 0);
+    TAO888_FrameBuffer_Fill(&frameBuffers[i], ILI9341_COLOR_WHITE);
+
+    // Draw all cherries into the framebuffer (rows 0-3)
+    for (int row = 0; row < 4; row++) {
+      for (int col = 0; col < 5; col++) {
+        TAO888_FrameBuffer_DrawImage(&frameBuffers[i], 7 + (col * 64), 8 + (row * 64),
+                                     CHERRY_BLACKOUTLINE_ONWHITE.width,
+                                     CHERRY_BLACKOUTLINE_ONWHITE.height,
+                                     CHERRY_BLACKOUTLINE_ONWHITE.data);
+        // TAO888_FrameBuffer_Commit(&frameBuffer, &lcd);
+      }
+    }
+
+    // horizontal lines
+    for (int yOffset = 0; yOffset <= 3; yOffset++) {
+      TAO888_FrameBuffer_DrawLine(&frameBuffers[i], 0, yOffset * 64, 320,
+                                  yOffset * 64, ILI9341_COLOR_BLACK);
     }
   }
 
-  // Draw grid lines into the framebuffer
-  for (int yOffset = 0; yOffset <= 3; yOffset++) {
-    TAO888_FrameBuffer_DrawLine(&frameBuffer, 0, yOffset * 64, 320,
-                                yOffset * 64, ILI9341_COLOR_BLACK);
-  }
-  for (int xOffset = 1; xOffset <= 4; xOffset++) {
-    TAO888_FrameBuffer_DrawLine(&frameBuffer, xOffset * 64, 0, xOffset * 64,
-                                256, ILI9341_COLOR_BLACK);
+  for (int i = 0; i < 5; i += 1) {
+    TAO888_FrameBuffer_Commit(&frameBuffers[i], &lcd);
   }
 
-  TAO888_FrameBuffer_Commit(&frameBuffer, &lcd);
-
+  for (int i = 0; i < 5; i += 1) {
+    TAO888_FrameBuffer_IncrementReadRow(&frameBuffers[i], ((scrollAmount * 2) * i));
+    TAO888_FrameBuffer_Commit(&frameBuffers[i], &lcd);
+    HAL_Delay(20);
+  }
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -191,10 +212,11 @@ int main(void) {
 
     /* USER CODE BEGIN 3 */
 
-    for (int i = 0; i <= 64; i += 8) {
-      TAO888_FrameBuffer_IncrementReadRow(&frameBuffer, -8);
-      TAO888_FrameBuffer_Commit(&frameBuffer, &lcd);
-      // HAL_Delay(30);
+    for (int i = 0; i >= -64; i += scrollAmount) {
+      for (int i = 0; i < 5; i += 1) {
+        TAO888_FrameBuffer_IncrementReadRow(&frameBuffers[i], scrollAmount);
+        TAO888_FrameBuffer_Commit(&frameBuffers[i], &lcd);
+      }
     }
 
     // HAL_Delay(500);
@@ -203,25 +225,26 @@ int main(void) {
 }
 
 /**
- * @brief System Clock Configuration
- * @retval None
- */
-void SystemClock_Config(void) {
+  * @brief System Clock Configuration
+  * @retval None
+  */
+void SystemClock_Config(void)
+{
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
   RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
 
   /** Configure LSE Drive Capability
-   */
+  */
   HAL_PWR_EnableBkUpAccess();
 
   /** Configure the main internal regulator output voltage
-   */
+  */
   __HAL_RCC_PWR_CLK_ENABLE();
   __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE3);
 
   /** Initializes the RCC Oscillators according to the specified parameters
-   * in the RCC_OscInitTypeDef structure.
-   */
+  * in the RCC_OscInitTypeDef structure.
+  */
   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
   RCC_OscInitStruct.HSEState = RCC_HSE_BYPASS;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
@@ -231,42 +254,46 @@ void SystemClock_Config(void) {
   RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
   RCC_OscInitStruct.PLL.PLLQ = 4;
   RCC_OscInitStruct.PLL.PLLR = 2;
-  if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK) {
+  if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
+  {
     Error_Handler();
   }
 
   /** Activate the Over-Drive mode
-   */
-  if (HAL_PWREx_EnableOverDrive() != HAL_OK) {
+  */
+  if (HAL_PWREx_EnableOverDrive() != HAL_OK)
+  {
     Error_Handler();
   }
 
   /** Initializes the CPU, AHB and APB buses clocks
-   */
-  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK |
-                                RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
+  */
+  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
+                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_3) != HAL_OK) {
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_3) != HAL_OK)
+  {
     Error_Handler();
   }
 }
 
 /**
- * @brief ETH Initialization Function
- * @param None
- * @retval None
- */
-static void MX_ETH_Init(void) {
+  * @brief ETH Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_ETH_Init(void)
+{
 
   /* USER CODE BEGIN ETH_Init 0 */
 
   /* USER CODE END ETH_Init 0 */
 
-  static uint8_t MACAddr[6];
+   static uint8_t MACAddr[6];
 
   /* USER CODE BEGIN ETH_Init 1 */
 
@@ -288,26 +315,28 @@ static void MX_ETH_Init(void) {
 
   /* USER CODE END MACADDRESS */
 
-  if (HAL_ETH_Init(&heth) != HAL_OK) {
+  if (HAL_ETH_Init(&heth) != HAL_OK)
+  {
     Error_Handler();
   }
 
-  memset(&TxConfig, 0, sizeof(ETH_TxPacketConfig));
-  TxConfig.Attributes =
-      ETH_TX_PACKETS_FEATURES_CSUM | ETH_TX_PACKETS_FEATURES_CRCPAD;
+  memset(&TxConfig, 0 , sizeof(ETH_TxPacketConfig));
+  TxConfig.Attributes = ETH_TX_PACKETS_FEATURES_CSUM | ETH_TX_PACKETS_FEATURES_CRCPAD;
   TxConfig.ChecksumCtrl = ETH_CHECKSUM_IPHDR_PAYLOAD_INSERT_PHDR_CALC;
   TxConfig.CRCPadCtrl = ETH_CRC_PAD_INSERT;
   /* USER CODE BEGIN ETH_Init 2 */
 
   /* USER CODE END ETH_Init 2 */
+
 }
 
 /**
- * @brief SPI5 Initialization Function
- * @param None
- * @retval None
- */
-static void MX_SPI5_Init(void) {
+  * @brief SPI5 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_SPI5_Init(void)
+{
 
   /* USER CODE BEGIN SPI5_Init 0 */
 
@@ -331,20 +360,23 @@ static void MX_SPI5_Init(void) {
   hspi5.Init.CRCPolynomial = 7;
   hspi5.Init.CRCLength = SPI_CRC_LENGTH_DATASIZE;
   hspi5.Init.NSSPMode = SPI_NSS_PULSE_ENABLE;
-  if (HAL_SPI_Init(&hspi5) != HAL_OK) {
+  if (HAL_SPI_Init(&hspi5) != HAL_OK)
+  {
     Error_Handler();
   }
   /* USER CODE BEGIN SPI5_Init 2 */
 
   /* USER CODE END SPI5_Init 2 */
+
 }
 
 /**
- * @brief USART3 Initialization Function
- * @param None
- * @retval None
- */
-static void MX_USART3_UART_Init(void) {
+  * @brief USART3 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_USART3_UART_Init(void)
+{
 
   /* USER CODE BEGIN USART3_Init 0 */
 
@@ -363,20 +395,23 @@ static void MX_USART3_UART_Init(void) {
   huart3.Init.OverSampling = UART_OVERSAMPLING_16;
   huart3.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
   huart3.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
-  if (HAL_UART_Init(&huart3) != HAL_OK) {
+  if (HAL_UART_Init(&huart3) != HAL_OK)
+  {
     Error_Handler();
   }
   /* USER CODE BEGIN USART3_Init 2 */
 
   /* USER CODE END USART3_Init 2 */
+
 }
 
 /**
- * @brief USB_OTG_FS Initialization Function
- * @param None
- * @retval None
- */
-static void MX_USB_OTG_FS_PCD_Init(void) {
+  * @brief USB_OTG_FS Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_USB_OTG_FS_PCD_Init(void)
+{
 
   /* USER CODE BEGIN USB_OTG_FS_Init 0 */
 
@@ -395,20 +430,39 @@ static void MX_USB_OTG_FS_PCD_Init(void) {
   hpcd_USB_OTG_FS.Init.lpm_enable = DISABLE;
   hpcd_USB_OTG_FS.Init.vbus_sensing_enable = ENABLE;
   hpcd_USB_OTG_FS.Init.use_dedicated_ep1 = DISABLE;
-  if (HAL_PCD_Init(&hpcd_USB_OTG_FS) != HAL_OK) {
+  if (HAL_PCD_Init(&hpcd_USB_OTG_FS) != HAL_OK)
+  {
     Error_Handler();
   }
   /* USER CODE BEGIN USB_OTG_FS_Init 2 */
 
   /* USER CODE END USB_OTG_FS_Init 2 */
+
 }
 
 /**
- * @brief GPIO Initialization Function
- * @param None
- * @retval None
- */
-static void MX_GPIO_Init(void) {
+  * Enable DMA controller clock
+  */
+static void MX_DMA_Init(void)
+{
+
+  /* DMA controller clock enable */
+  __HAL_RCC_DMA2_CLK_ENABLE();
+
+  /* DMA interrupt init */
+  /* DMA2_Stream4_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA2_Stream4_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA2_Stream4_IRQn);
+
+}
+
+/**
+  * @brief GPIO Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_GPIO_Init(void)
+{
   GPIO_InitTypeDef GPIO_InitStruct = {0};
   /* USER CODE BEGIN MX_GPIO_Init_1 */
 
@@ -424,11 +478,10 @@ static void MX_GPIO_Init(void) {
   __HAL_RCC_GPIOD_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, LD1_Pin | LD3_Pin | LD2_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, LD1_Pin|LD3_Pin|LD2_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOG, LCD_RST_Pin | LCD_CS_Pin | USB_PowerSwitchOn_Pin,
-                    GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOG, LCD_RST_Pin|LCD_CS_Pin|USB_PowerSwitchOn_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(LCD_DC_GPIO_Port, LCD_DC_Pin, GPIO_PIN_RESET);
@@ -440,14 +493,14 @@ static void MX_GPIO_Init(void) {
   HAL_GPIO_Init(USER_Btn_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : LD1_Pin LD3_Pin LD2_Pin */
-  GPIO_InitStruct.Pin = LD1_Pin | LD3_Pin | LD2_Pin;
+  GPIO_InitStruct.Pin = LD1_Pin|LD3_Pin|LD2_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /*Configure GPIO pins : LCD_RST_Pin LCD_CS_Pin USB_PowerSwitchOn_Pin */
-  GPIO_InitStruct.Pin = LCD_RST_Pin | LCD_CS_Pin | USB_PowerSwitchOn_Pin;
+  GPIO_InitStruct.Pin = LCD_RST_Pin|LCD_CS_Pin|USB_PowerSwitchOn_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -473,13 +526,29 @@ static void MX_GPIO_Init(void) {
 
 /* USER CODE BEGIN 4 */
 
+void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi) {
+  if (hspi == &hspi5) {
+    HAL_UART_Transmit(&huart3, (uint8_t*)"TxCompleted\r\n", 14, 50);
+    spi5Transferable = true;
+  }
+}
+
+void HAL_SPI_ErrorCallback(SPI_HandleTypeDef *hspi)
+{
+  // if (hspi == &hspi5) {
+  //   spi5Transferable = false;
+  // }
+}
+
+
 /* USER CODE END 4 */
 
 /**
- * @brief  This function is executed in case of error occurrence.
- * @retval None
- */
-void Error_Handler(void) {
+  * @brief  This function is executed in case of error occurrence.
+  * @retval None
+  */
+void Error_Handler(void)
+{
   /* USER CODE BEGIN Error_Handler_Debug */
   /* User can add his own implementation to report the HAL error return state */
   __disable_irq();
@@ -489,13 +558,14 @@ void Error_Handler(void) {
 }
 #ifdef USE_FULL_ASSERT
 /**
- * @brief  Reports the name of the source file and the source line number
- *         where the assert_param error has occurred.
- * @param  file: pointer to the source file name
- * @param  line: assert_param error line source number
- * @retval None
- */
-void assert_failed(uint8_t *file, uint32_t line) {
+  * @brief  Reports the name of the source file and the source line number
+  *         where the assert_param error has occurred.
+  * @param  file: pointer to the source file name
+  * @param  line: assert_param error line source number
+  * @retval None
+  */
+void assert_failed(uint8_t *file, uint32_t line)
+{
   /* USER CODE BEGIN 6 */
   /* User can add his own implementation to report the file name and line
      number, ex: printf("Wrong parameters value: file %s on line %d\r\n", file,
