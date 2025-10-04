@@ -984,7 +984,7 @@ const uint16_t GRAPE_BYTES[] = {
     0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
 };
 
-const uint16_t HAZENUT_BYTES[] = {
+const uint16_t HAZELNUT_BYTES[] = {
     0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
     0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
     0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
@@ -2739,19 +2739,19 @@ const uint16_t WILD_BYTES[] = {
     0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
 };
 
-const Image_t APPLE = { APPLE_BYTES, 48, 48 };
-const Image_t BANANA = { BANANA_BYTES, 48, 48 };
-const Image_t BLUEBERRY = { BLUEBERRY_BYTES, 48, 48 };
-const Image_t CHERRY = { CHERRY_BYTES, 48, 48 };
-const Image_t GRAPE = { GRAPE_BYTES, 48, 48 };
-const Image_t HAZENUT = { HAZENUT_BYTES, 48, 48 };
-const Image_t LIME = { LIME_BYTES, 48, 48 };
-const Image_t MANGOSTEEN = { MANGOSTEEN_BYTES, 48, 48 };
-const Image_t ORANGE = { ORANGE_BYTES, 48, 48 };
-const Image_t PEACH = { PEACH_BYTES, 48, 48 };
-const Image_t SCATTER = { SCATTER_BYTES, 48, 48 };
-const Image_t STRAWBERRY = { STRAWBERRY_BYTES, 48, 48 };
-const Image_t WATERMELON = { WATERMELON_BYTES, 48, 48 };
-const Image_t WILD = { WILD_BYTES, 48, 48 };
+const Image_t APPLE_IMAGE = { APPLE_BYTES, 48, 48 };
+const Image_t BANANA_IMAGE = { BANANA_BYTES, 48, 48 };
+const Image_t BLUEBERRY_IMAGE = { BLUEBERRY_BYTES, 48, 48 };
+const Image_t CHERRY_IMAGE = { CHERRY_BYTES, 48, 48 };
+const Image_t GRAPE_IMAGE = { GRAPE_BYTES, 48, 48 };
+const Image_t HAZELNUT_IMAGE = { HAZELNUT_BYTES, 48, 48 };
+const Image_t LIME_IMAGE = { LIME_BYTES, 48, 48 };
+const Image_t MANGOSTEEN_IMAGE = { MANGOSTEEN_BYTES, 48, 48 };
+const Image_t ORANGE_IMAGE = { ORANGE_BYTES, 48, 48 };
+const Image_t PEACH_IMAGE = { PEACH_BYTES, 48, 48 };
+const Image_t SCATTER_IMAGE = { SCATTER_BYTES, 48, 48 };
+const Image_t STRAWBERRY_IMAGE = { STRAWBERRY_BYTES, 48, 48 };
+const Image_t WATERMELON_IMAGE = { WATERMELON_BYTES, 48, 48 };
+const Image_t WILD_IMAGE = { WILD_BYTES, 48, 48 };
 
 #endif
