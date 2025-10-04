@@ -143,7 +143,7 @@ int main(void)
 
   ILI9341_HandleTypeDef lcd = ILI9341_Init(
       &hspi5, LCD_CS_GPIO_Port, LCD_CS_Pin, LCD_DC_GPIO_Port, LCD_DC_Pin,
-      LCD_RST_GPIO_Port, LCD_RST_Pin, ILI9341_ROTATION_HORIZONTAL_2, 320, 240);
+      LCD_RST_GPIO_Port, LCD_RST_Pin, ILI9341_ROTATION_HORIZONTAL_1, 320, 240);
 
   // ILI9341_SetOrientation(&lcd, ILI9341_ROTATION_HORIZONTAL_2, 1);
   // ILI9341_FillRectangle(&lcd, 20, 20, 10, 10, ILI9341_COLOR_BLACK);
@@ -201,7 +201,7 @@ int main(void)
   for (int i = 0; i < 5; i += 1) {
     TAO888_FrameBuffer_IncrementReadRow(&frameBuffers[i], ((scrollAmount * 2) * i));
     TAO888_FrameBuffer_Commit(&frameBuffers[i], &lcd);
-    HAL_Delay(20);
+    // HAL_Delay(20);
   }
   /* USER CODE END 2 */
 
