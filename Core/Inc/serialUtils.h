@@ -9,5 +9,6 @@
 uint8_t Serial_Recv(uint32_t timeout);
 void Serial_Print(const char *str);
 void Serial_Printf(const char *format, ...);
+void Serial_Println(const char *str);
 
 #endif
