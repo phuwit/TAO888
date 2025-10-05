@@ -3,6 +3,7 @@
 #include "main.h"
 #include "serialUtils.h"
 #include "slotCols.h"
+#include "slotSymbols.h"
 #include "stm32f7xx_hal_rng.h"
 #include "stm32f7xx_hal_tim.h"
 #include <stdbool.h>
@@ -19,7 +20,7 @@ BannerText bannerTexts[] = {
      ILI9341_COLOR_BLACK, ILI9341_COLOR_WHITE, 0}};
 Banner banner = {bannerTexts, sizeof(bannerTexts) / sizeof(bannerTexts[0])};
 
-SlotCol slotCols[5];
+SlotCol slotCols[SLOT_CELL_COLUMNS];
 
 volatile State currentState = WAITING;
 volatile bool startAdvancingState = false;
@@ -28,7 +29,7 @@ void TAO888_SlotMachine_Init(ILI9341_HandleTypeDef *lcd) {
   TAO888_Banner_Draw(&banner, lcd);
 
   // vertical lines
-  for (int xOffset = 1; xOffset <= 5; xOffset++) {
+  for (int xOffset = 1; xOffset <= SLOT_CELL_COLUMNS; xOffset++) {
     ILI9341_DrawLine(lcd, (xOffset * SLOT_CELL_SIZE) - 1, BANNER_SIZE,
                      (xOffset * SLOT_CELL_SIZE) - 1, LCD_HEIGHT,
                      ILI9341_COLOR_BLACK);
@@ -116,6 +117,17 @@ void TAO888_SlotMachine_IncrementState() {
   if (currentState >= (sizeof(stateConfig) / sizeof(stateConfig[0]))) {
     currentState = 0;
     TAO888_SlotCols_Offset(slotCols);
+    SlotSymbol symbolReciever[SLOT_CELL_COLUMNS * SLOT_CELL_ROWS];
+    TAO888_SlotMachine_GetPayoutSymbols(symbolReciever);
+    Serial_Printf("%x", symbolReciever);
   }
   Serial_Printf("%d\r\n", currentState);
+}
+
+void TAO888_SlotMachine_GetPayoutSymbols(SlotSymbol* symbolReciever) {
+  for(uint8_t col = 0; col < SLOT_CELL_COLUMNS; col += 1) {
+    for(uint8_t row = 0; row < SLOT_CELL_ROWS; row += 1) {
+      symbolReciever[(col * SLOT_CELL_ROWS) + row] = TAO888_SlotColQueue_ReadIndex(&slotCols[col], row);
+    }
+  }
 }

@@ -7,6 +7,7 @@
 #include <stdint.h>
 
 #include "ili9341.h"
+#include "slotSymbols.h"
 
 typedef enum {
   WAITING,
@@ -45,5 +46,6 @@ void TAO888_SlotMachine_Update(ILI9341_HandleTypeDef *lcd);
 void TAO888_SlotMachine_StartCycle();
 void TAO888_SlotMachine_AdvanceStateGracefully();
 void TAO888_SlotMachine_IncrementState();
+void TAO888_SlotMachine_GetPayoutSymbols(SlotSymbol* symbolReciever);
 
 #endif

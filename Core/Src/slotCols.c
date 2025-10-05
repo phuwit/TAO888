@@ -7,20 +7,20 @@
 #include "utils.h"
 #include <stdint.h>
 
-void TAO888_SlotCols_Enqueue(SlotCol *slotCol, SlotSymbol symbol) {
+void TAO888_SlotColQueue_Enqueue(SlotCol *slotCol, SlotSymbol symbol) {
   slotCol->symbolQueue[slotCol->symbolQueueTailIndex] = symbol;
   slotCol->symbolQueueTailIndex =
       (slotCol->symbolQueueTailIndex + 1) % SYMBOL_QUEUE_SIZE;
 }
 
-void TAO888_SlotCols_ReplaceHead(SlotCol *slotCol, SlotSymbol symbol) {
+void TAO888_SlotColQueue_ReplaceHead(SlotCol *slotCol, SlotSymbol symbol) {
   slotCol->symbolQueueTailIndex =
       (slotCol->symbolQueueTailIndex - 1 + SYMBOL_QUEUE_SIZE) %
       SYMBOL_QUEUE_SIZE;
   slotCol->symbolQueue[slotCol->symbolQueueTailIndex] = symbol;
 }
 
-SlotSymbol TAO888_SlotCols_ReadIndex(SlotCol *slotCol, const uint8_t index) {
+SlotSymbol TAO888_SlotColQueue_ReadIndex(SlotCol *slotCol, const uint8_t index) {
   const uint8_t readIndex =
       (slotCol->symbolQueueTailIndex + index) % SYMBOL_QUEUE_SIZE;
   return slotCol->symbolQueue[readIndex];
@@ -38,7 +38,7 @@ void TAO888_SlotCols_Init(SlotCol *slotCols, ILI9341_HandleTypeDef *lcd) {
 
     for (int row = 0; row < 4; row++) {
       SlotSymbol symbol = TAO888_Utils_GetRandomSymbol();
-      TAO888_SlotCols_Enqueue(&slotCols[col], symbol);
+      TAO888_SlotColQueue_Enqueue(&slotCols[col], symbol);
 
       TAO888_FrameBuffer_DrawImage(
           &slotCols[col].frameBuffer, SLOT_CELL_PADDING_X,
@@ -87,11 +87,11 @@ bool TAO888_SlotCols_ScrollOne(SlotCol *slotCol,
   if (TAO888_FrameBuffer_IncrementReadRow(&slotCol->frameBuffer,
                                           scrollAmount, snap)) {
     const SlotSymbol newSymbol = TAO888_Utils_GetRandomSymbol();
-    TAO888_SlotCols_ReplaceHead(slotCol, newSymbol);
+    TAO888_SlotColQueue_ReplaceHead(slotCol, newSymbol);
 
     for (int row = 0; row < 4; row++) {
       const SlotSymbol symbol =
-          TAO888_SlotCols_ReadIndex(slotCol, row);
+          TAO888_SlotColQueue_ReadIndex(slotCol, row);
       TAO888_FrameBuffer_DrawImage(
           &slotCol->frameBuffer, SLOT_CELL_PADDING_X,
           SLOT_CELL_PADDING_Y + (row * SLOT_CELL_SIZE), symbol.image.width,

@@ -130,6 +130,8 @@ void Error_Handler(void);
 #define LCD_WIDTH 320
 #define LCD_HEIGHT 240
 #define BANNER_SIZE 48
+#define SLOT_CELL_COLUMNS 5
+#define SLOT_CELL_ROWS 3
 #define SLOT_CELL_SIZE 64
 #define SLOT_CELL_OFFSET_SIZE -24
 #define SLOT_CELL_PADDING_X 8

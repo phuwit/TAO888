@@ -18,6 +18,10 @@ typedef struct {
   uint8_t symbolQueueUsedSize;
 } SlotCol;
 
+void TAO888_SlotColQueue_Enqueue(SlotCol *slotCol, SlotSymbol symbol);
+void TAO888_SlotColQueue_ReplaceHead(SlotCol *slotCol, SlotSymbol symbol);
+SlotSymbol TAO888_SlotColQueue_ReadIndex(SlotCol *slotCol, const uint8_t index);
+
 void TAO888_SlotCols_Init(SlotCol *slotCols, ILI9341_HandleTypeDef *lcd);
 void TAO888_SlotCols_Offset(SlotCol *slotCols);
 void TAO888_SlotCols_CommitAll(SlotCol *slotCols, ILI9341_HandleTypeDef *lcd);
