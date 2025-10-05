@@ -45,7 +45,12 @@ target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
 # Add sources to executable
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user sources here
+    Core/Src/queue.c
+    Core/Src/utils.c
     Core/Src/frameBuffer.c
+    Core/Src/banner.c
+    Core/Src/slotCols.c
+    Core/Src/slotMachine.c
 
     Drivers/STM32-ILI9341/Src/ili9341_fonts.c
     Drivers/STM32-ILI9341/Src/ili9341_touch.c
@@ -56,7 +61,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user defined include paths
     Core/Inc
-    
+
     Drivers/STM32-ILI9341/Inc
 )
 

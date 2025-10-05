@@ -28,7 +28,6 @@ extern "C" {
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f7xx_hal.h"
-#include "stdbool.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -38,12 +37,12 @@ extern "C" {
 /* Exported types ------------------------------------------------------------*/
 /* USER CODE BEGIN ET */
 
+extern RNG_HandleTypeDef hrng;
+
 /* USER CODE END ET */
 
 /* Exported constants --------------------------------------------------------*/
 /* USER CODE BEGIN EC */
-
-extern volatile bool spi5Transferable;
 
 /* USER CODE END EC */
 
@@ -126,6 +125,13 @@ void Error_Handler(void);
 #define LD2_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
+
+#define LCD_WIDTH 320
+#define LCD_HEIGHT 240
+#define HEADER_SIZE 48
+#define SLOT_CELL_SIZE 64
+#define SLOT_CELL_PADDING_X 8
+#define SLOT_CELL_PADDING_Y 8
 
 /* USER CODE END Private defines */
 

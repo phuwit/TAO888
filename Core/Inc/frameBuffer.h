@@ -1,12 +1,11 @@
 #ifndef TAO888_FRAMEBUFFER
 #define TAO888_FRAMEBUFFER
 
+#include <stdint.h>
+#include "ili9341.h"
+
 #define SCREEN_WIDTH 480
 #define SCREEN_HEIGHT 320
-
-#include <stdint.h>
-
-#include "ili9341.h"
 
 typedef struct {
   uint16_t x;
@@ -22,29 +21,30 @@ typedef struct {
   uint16_t bufferWidth;
   uint16_t bufferHeight;
   uint16_t *buffer;
-} FrameBuffer_t;
+} FrameBuffer;
 
-FrameBuffer_t TAO888_FrameBuffer_Initialize(
+FrameBuffer TAO888_FrameBuffer_Initialize(
   const uint16_t x, const uint16_t y, const uint16_t writableWidth,
   const uint16_t writableHeight, const uint16_t paddingTop, const uint16_t paddingBottom,
   const uint16_t paddingLeft, const uint16_t paddingRight);
 
-void TAO888_FrameBuffer_IncrementReadRow(FrameBuffer_t *frameBuffer,
+// returns false if incremented, true if incremented and looped to beginging
+bool TAO888_FrameBuffer_IncrementReadRow(FrameBuffer *frameBuffer,
                                          const int16_t amount);
 
-void TAO888_FrameBuffer_IncrementReadColumn(FrameBuffer_t *frameBuffer,
+void TAO888_FrameBuffer_IncrementReadColumn(FrameBuffer *frameBuffer,
                                             const int16_t amount);
 
-void TAO888_FrameBuffer_Commit(const FrameBuffer_t *frameBuffer,
+void TAO888_FrameBuffer_Commit(const FrameBuffer *frameBuffer,
                                ILI9341_HandleTypeDef *ili9341);
 
-void TAO888_FrameBuffer_Fill(FrameBuffer_t *frameBuffer, const uint16_t color);
+void TAO888_FrameBuffer_Fill(FrameBuffer *frameBuffer, const uint16_t color);
 
-void TAO888_FrameBuffer_DrawImage(FrameBuffer_t *frameBuffer, const uint16_t x,
+void TAO888_FrameBuffer_DrawImage(FrameBuffer *frameBuffer, const uint16_t x,
                                   const uint16_t y, const uint16_t width,
                                   const uint16_t height, const uint16_t *image);
 
-void TAO888_FrameBuffer_DrawLine(FrameBuffer_t *frameBuffer, uint16_t x0,
+void TAO888_FrameBuffer_DrawLine(FrameBuffer *frameBuffer, uint16_t x0,
                                  uint16_t y0, uint16_t x1, uint16_t y1,
                                  uint16_t color);
 

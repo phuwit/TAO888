@@ -1,15 +1,13 @@
 #include "frameBuffer.h"
-#include "ili9341.h"
-#include <stdint.h>
 
-FrameBuffer_t TAO888_FrameBuffer_Initialize(const uint16_t x, const uint16_t y,
+FrameBuffer TAO888_FrameBuffer_Initialize(const uint16_t x, const uint16_t y,
                                             const uint16_t writableWidth,
                                             const uint16_t writableHeight,
                                             const uint16_t paddingTop,
                                             const uint16_t paddingBottom,
                                             const uint16_t paddingLeft,
                                             const uint16_t paddingRight) {
-  FrameBuffer_t frameBuffer;
+  FrameBuffer frameBuffer;
   frameBuffer.x = x;
   frameBuffer.y = y;
   frameBuffer.writableWidth = writableWidth;
@@ -28,16 +26,18 @@ FrameBuffer_t TAO888_FrameBuffer_Initialize(const uint16_t x, const uint16_t y,
   return frameBuffer;
 }
 
-void TAO888_FrameBuffer_IncrementReadRow(FrameBuffer_t *frameBuffer,
+bool TAO888_FrameBuffer_IncrementReadRow(FrameBuffer *frameBuffer,
                                          const int16_t amount) {
   frameBuffer->readRow += amount;
 
   if (frameBuffer->readRow >= frameBuffer->bufferHeight) {
     frameBuffer->readRow = frameBuffer->paddingTop;
+    return true;
   }
+  return false;
 }
 
-void TAO888_FrameBuffer_IncrementReadColumn(FrameBuffer_t *frameBuffer,
+void TAO888_FrameBuffer_IncrementReadColumn(FrameBuffer *frameBuffer,
                                             const int16_t amount) {
   frameBuffer->readColumn += amount;
 
@@ -46,7 +46,7 @@ void TAO888_FrameBuffer_IncrementReadColumn(FrameBuffer_t *frameBuffer,
   }
 }
 
-void TAO888_FrameBuffer_Commit(const FrameBuffer_t *frameBuffer,
+void TAO888_FrameBuffer_Commit(const FrameBuffer *frameBuffer,
                                ILI9341_HandleTypeDef *ili9341) {
   const uint16_t *startPtr = frameBuffer->buffer + (frameBuffer->readRow * frameBuffer->bufferWidth);
   ILI9341_DrawImage(ili9341, frameBuffer->x, frameBuffer->y,
@@ -54,7 +54,7 @@ void TAO888_FrameBuffer_Commit(const FrameBuffer_t *frameBuffer,
                     startPtr);
 }
 
-void TAO888_FrameBuffer_Fill(FrameBuffer_t *frameBuffer, const uint16_t color) {
+void TAO888_FrameBuffer_Fill(FrameBuffer *frameBuffer, const uint16_t color) {
   for (int row = 0; row < frameBuffer->bufferHeight; row += 1) {
     for (int column = 0; column < frameBuffer->bufferWidth; column += 1) {
       frameBuffer->buffer[frameBuffer->bufferWidth * row + column] = color;
@@ -62,7 +62,7 @@ void TAO888_FrameBuffer_Fill(FrameBuffer_t *frameBuffer, const uint16_t color) {
   }
 }
 
-void TAO888_FrameBuffer_DrawImage(FrameBuffer_t *frameBuffer, const uint16_t x,
+void TAO888_FrameBuffer_DrawImage(FrameBuffer *frameBuffer, const uint16_t x,
                                   const uint16_t y, const uint16_t width,
                                   const uint16_t height,
                                   const uint16_t *image) {
@@ -80,7 +80,7 @@ void TAO888_FrameBuffer_DrawImage(FrameBuffer_t *frameBuffer, const uint16_t x,
   }
 }
 
-void TAO888_FrameBuffer_DrawLine(FrameBuffer_t *frameBuffer, uint16_t x0,
+void TAO888_FrameBuffer_DrawLine(FrameBuffer *frameBuffer, uint16_t x0,
                                  uint16_t y0, uint16_t x1, uint16_t y1,
                                  uint16_t color) {
   int dx = abs(x1 - x0);
