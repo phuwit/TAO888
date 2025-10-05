@@ -29,7 +29,7 @@ SlotSymbol TAO888_SlotCols_ReadIndex(SlotCol *slotCol, const uint8_t index) {
 void TAO888_SlotCols_Init(SlotCol *slotCols, ILI9341_HandleTypeDef *lcd) {
   for (int col = 0; col < 5; col += 1) {
     slotCols[col].frameBuffer = TAO888_FrameBuffer_Initialize(
-        (col * SLOT_CELL_SIZE), HEADER_SIZE, SLOT_CELL_SIZE - 1,
+        (col * SLOT_CELL_SIZE), BANNER_SIZE, SLOT_CELL_SIZE - 1,
         SLOT_CELL_SIZE * WRITABLE_COL_CELLS, SLOT_CELL_SIZE * TOP_PADDING_CELLS,
         0, 0, 0);
     slotCols[col].symbolQueueTailIndex = 0;

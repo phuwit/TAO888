@@ -21,7 +21,7 @@ void TAO888_SlotMachine_Init(ILI9341_HandleTypeDef *lcd) {
 
   // vertical lines
   for (int xOffset = 1; xOffset <= 5; xOffset++) {
-    ILI9341_DrawLine(lcd, (xOffset * SLOT_CELL_SIZE) - 1, HEADER_SIZE,
+    ILI9341_DrawLine(lcd, (xOffset * SLOT_CELL_SIZE) - 1, BANNER_SIZE,
                      (xOffset * SLOT_CELL_SIZE) - 1, LCD_HEIGHT,
                      ILI9341_COLOR_BLACK);
   }
