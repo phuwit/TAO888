@@ -7,15 +7,16 @@
 #include "utils.h"
 #include <stdint.h>
 
-extern int8_t scrollAmount;
-
 void TAO888_SlotCols_Enqueue(SlotCol *slotCol, SlotSymbol symbol) {
   slotCol->symbolQueue[slotCol->symbolQueueTailIndex] = symbol;
-  slotCol->symbolQueueTailIndex = (slotCol->symbolQueueTailIndex + 1) % SYMBOL_QUEUE_SIZE;
+  slotCol->symbolQueueTailIndex =
+      (slotCol->symbolQueueTailIndex + 1) % SYMBOL_QUEUE_SIZE;
 }
 
 void TAO888_SlotCols_ReplaceHead(SlotCol *slotCol, SlotSymbol symbol) {
-  slotCol->symbolQueueTailIndex = (slotCol->symbolQueueTailIndex - 1 + SYMBOL_QUEUE_SIZE) % SYMBOL_QUEUE_SIZE;
+  slotCol->symbolQueueTailIndex =
+      (slotCol->symbolQueueTailIndex - 1 + SYMBOL_QUEUE_SIZE) %
+      SYMBOL_QUEUE_SIZE;
   slotCol->symbolQueue[slotCol->symbolQueueTailIndex] = symbol;
 }
 
@@ -52,39 +53,39 @@ void TAO888_SlotCols_Init(SlotCol *slotCols, ILI9341_HandleTypeDef *lcd) {
     }
   }
 
+  TAO888_SlotCols_Offset(slotCols);
   TAO888_SlotCols_Commit(slotCols, lcd);
+}
 
+void TAO888_SlotCols_Offset(SlotCol *slotCols) {
   for (int i = 0; i < 5; i += 1) {
     TAO888_FrameBuffer_IncrementReadRow(&slotCols[i].frameBuffer,
-                                        ((scrollAmount * 2) * i));
-    TAO888_FrameBuffer_Commit(&slotCols[i].frameBuffer, lcd);
+                                        ((SLOT_CELL_OFFSET_SIZE) * i));
   }
 }
+
 void TAO888_SlotCols_Commit(SlotCol *slotCols, ILI9341_HandleTypeDef *lcd) {
   for (int i = 0; i < 5; i += 1) {
     TAO888_FrameBuffer_Commit(&slotCols[i].frameBuffer, lcd);
   }
 }
 
-void TAO888_SlotCols_Scroll(SlotCol *slotCols, ILI9341_HandleTypeDef *lcd,
+void TAO888_SlotCols_Scroll(SlotCol *slotCols,
                             int8_t scrollAmount) {
-  for (int scrollX = 0; scrollX >= -SLOT_CELL_SIZE; scrollX += scrollAmount) {
-    for (int col = 0; col < 5; col += 1) {
-      if (TAO888_FrameBuffer_IncrementReadRow(&slotCols[col].frameBuffer,
-                                              scrollAmount)) {
-        const SlotSymbol newSymbol = TAO888_Utils_GetRandomSymbol();
-        TAO888_SlotCols_ReplaceHead(&slotCols[col], newSymbol);
+  for (int col = 0; col < 5; col += 1) {
+    if (TAO888_FrameBuffer_IncrementReadRow(&slotCols[col].frameBuffer,
+                                            scrollAmount)) {
+      const SlotSymbol newSymbol = TAO888_Utils_GetRandomSymbol();
+      TAO888_SlotCols_ReplaceHead(&slotCols[col], newSymbol);
 
-        for (int row = 0; row < 4; row++) {
-          const SlotSymbol symbol =
-              TAO888_SlotCols_ReadIndex(&slotCols[col], row);
-          TAO888_FrameBuffer_DrawImage(
-              &slotCols[col].frameBuffer, SLOT_CELL_PADDING_X,
-              SLOT_CELL_PADDING_Y + (row * SLOT_CELL_SIZE), symbol.image.width,
-              symbol.image.height, symbol.image.data);
-        }
+      for (int row = 0; row < 4; row++) {
+        const SlotSymbol symbol =
+            TAO888_SlotCols_ReadIndex(&slotCols[col], row);
+        TAO888_FrameBuffer_DrawImage(
+            &slotCols[col].frameBuffer, SLOT_CELL_PADDING_X,
+            SLOT_CELL_PADDING_Y + (row * SLOT_CELL_SIZE), symbol.image.width,
+            symbol.image.height, symbol.image.data);
       }
-      TAO888_FrameBuffer_Commit(&slotCols[col].frameBuffer, lcd);
     }
   }
 }

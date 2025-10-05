@@ -130,6 +130,7 @@ void Error_Handler(void);
 #define LCD_HEIGHT 240
 #define HEADER_SIZE 48
 #define SLOT_CELL_SIZE 64
+#define SLOT_CELL_OFFSET_SIZE -16
 #define SLOT_CELL_PADDING_X 8
 #define SLOT_CELL_PADDING_Y 8
 

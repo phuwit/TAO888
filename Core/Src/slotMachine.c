@@ -16,7 +16,7 @@ SlotCol slotCols[5];
 
 int8_t scrollAmount = -8;
 
-void TAO888_SlotMachine_Init(ILI9341_HandleTypeDef* lcd) {
+void TAO888_SlotMachine_Init(ILI9341_HandleTypeDef *lcd) {
   TAO888_Banner_Draw(&banner, lcd);
 
   // vertical lines
@@ -27,8 +27,10 @@ void TAO888_SlotMachine_Init(ILI9341_HandleTypeDef* lcd) {
   }
 
   TAO888_SlotCols_Init(slotCols, lcd);
+  TAO888_SlotCols_Commit(slotCols, lcd);
 }
 
-void TAO888_SlotMachine_Update(ILI9341_HandleTypeDef* lcd) {
-  TAO888_SlotCols_Scroll(slotCols, lcd, scrollAmount);
+void TAO888_SlotMachine_Update(ILI9341_HandleTypeDef *lcd) {
+  TAO888_SlotCols_Scroll(slotCols, scrollAmount);
+  TAO888_SlotCols_Commit(slotCols, lcd);
 }
