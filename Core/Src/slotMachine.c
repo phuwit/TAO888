@@ -1,6 +1,7 @@
 #include "slotMachine.h"
 #include "banner.h"
 #include "main.h"
+#include "serialUtils.h"
 #include "slotCols.h"
 
 BannerText bannerTexts[] = {
@@ -14,6 +15,7 @@ Banner banner = {bannerTexts, sizeof(bannerTexts) / sizeof(bannerTexts[0])};
 
 SlotCol slotCols[5];
 
+State currentState = WAITING;
 int8_t scrollAmount = -8;
 
 void TAO888_SlotMachine_Init(ILI9341_HandleTypeDef *lcd) {
@@ -31,6 +33,41 @@ void TAO888_SlotMachine_Init(ILI9341_HandleTypeDef *lcd) {
 }
 
 void TAO888_SlotMachine_Update(ILI9341_HandleTypeDef *lcd) {
-  TAO888_SlotCols_Scroll(slotCols, scrollAmount);
-  TAO888_SlotCols_Commit(slotCols, lcd);
+  // switch (currentState) {
+  //   case WAITING:
+  //     break;
+  //   case SHUFFLE:
+  //     break;
+  //   case SCROLL5:
+  //     break;
+  //   case SCROLL4:
+  //     break;
+  //   case SCROLL3:
+  //     break;
+  //   case SCROLL2:
+  //     break;
+  //   case SCROLL1:
+  //     break;
+  //   case RESULT:
+  //     break;
+  // }
+  const StateConfig config = stateConfig[currentState];
+  if (config.scroll) {
+    for (int index = config.scrollRowStartIndex; index < config.scrollRowEndIndex; index += 1) {
+      TAO888_SlotCols_ScrollOne(&slotCols[index], config.scrollAmount, config.scrollSnap);
+    }
+    TAO888_SlotCols_Commit(slotCols, lcd);
+  }
+}
+
+void TAO888_SlotMachine_StartCycle() {
+  if (currentState == WAITING) currentState = SHUFFLE;
+  Serial_Printf("currentState: %d\r\n", currentState);
+}
+
+void TAO888_SlotMachine_IncrementState() {
+  // currentState += 1;
+  // if (currentState >= (sizeof(stateConfig) / sizeof(stateConfig[0]))) {
+  //   currentState = WAITING;
+  // }
 }

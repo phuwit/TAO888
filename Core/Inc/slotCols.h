@@ -21,6 +21,7 @@ typedef struct {
 void TAO888_SlotCols_Init(SlotCol *slotCols, ILI9341_HandleTypeDef *lcd);
 void TAO888_SlotCols_Offset(SlotCol *slotCols);
 void TAO888_SlotCols_Commit(SlotCol *slotCols, ILI9341_HandleTypeDef *lcd);
-void TAO888_SlotCols_Scroll(SlotCol *slotCols, int8_t scrollAmount);
+void TAO888_SlotCols_ScrollAll(SlotCol *slotCols, int8_t scrollAmount, bool snap);
+void TAO888_SlotCols_ScrollOne(SlotCol *slotCols, int8_t scrollAmount, bool snap);
 
 #endif

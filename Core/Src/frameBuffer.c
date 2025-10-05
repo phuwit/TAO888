@@ -27,23 +27,27 @@ FrameBuffer TAO888_FrameBuffer_Initialize(const uint16_t x, const uint16_t y,
 }
 
 bool TAO888_FrameBuffer_IncrementReadRow(FrameBuffer *frameBuffer,
-                                         const int16_t amount) {
+                                         const int16_t amount, bool snap) {
   frameBuffer->readRow += amount;
 
-  if (frameBuffer->readRow >= frameBuffer->bufferHeight) {
-    frameBuffer->readRow = frameBuffer->paddingTop;
+  if (frameBuffer->readRow < 0 || frameBuffer->readRow >= frameBuffer->bufferHeight) {
+    if (snap) frameBuffer->readRow = frameBuffer->paddingTop;
+    else frameBuffer->readRow = (frameBuffer->readRow + frameBuffer->paddingTop) % frameBuffer->bufferHeight;
     return true;
   }
   return false;
 }
 
-void TAO888_FrameBuffer_IncrementReadColumn(FrameBuffer *frameBuffer,
-                                            const int16_t amount) {
+bool TAO888_FrameBuffer_IncrementReadColumn(FrameBuffer *frameBuffer,
+                                            const int16_t amount, bool snap) {
   frameBuffer->readColumn += amount;
 
-  if (frameBuffer->readColumn >= frameBuffer->bufferWidth) {
-    frameBuffer->readColumn = frameBuffer->paddingLeft;
+  if (frameBuffer->readColumn < 0 || frameBuffer->readColumn >= frameBuffer->bufferWidth) {
+    if (snap) frameBuffer->readColumn = frameBuffer->paddingTop;
+    else frameBuffer->readColumn = (frameBuffer->readColumn) % frameBuffer->bufferHeight;
+    return true;
   }
+  return false;
 }
 
 void TAO888_FrameBuffer_Commit(const FrameBuffer *frameBuffer,

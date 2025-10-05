@@ -16,8 +16,8 @@ typedef struct {
   uint16_t paddingBottom;
   uint16_t paddingLeft;
   uint16_t paddingRight;
-  uint16_t readRow;
-  uint16_t readColumn;
+  int16_t readRow;
+  int16_t readColumn;
   uint16_t bufferWidth;
   uint16_t bufferHeight;
   uint16_t *buffer;
@@ -28,12 +28,14 @@ FrameBuffer TAO888_FrameBuffer_Initialize(
   const uint16_t writableHeight, const uint16_t paddingTop, const uint16_t paddingBottom,
   const uint16_t paddingLeft, const uint16_t paddingRight);
 
-// returns false if incremented, true if incremented and looped to beginging
+// returns false if incremented, true if incremented and looped
 bool TAO888_FrameBuffer_IncrementReadRow(FrameBuffer *frameBuffer,
-                                         const int16_t amount);
+                                         const int16_t amount,
+                                         bool snap);
 
-void TAO888_FrameBuffer_IncrementReadColumn(FrameBuffer *frameBuffer,
-                                            const int16_t amount);
+bool TAO888_FrameBuffer_IncrementReadColumn(FrameBuffer *frameBuffer,
+                                            const int16_t amount,
+                                            bool snap);
 
 void TAO888_FrameBuffer_Commit(const FrameBuffer *frameBuffer,
                                ILI9341_HandleTypeDef *ili9341);

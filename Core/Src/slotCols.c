@@ -60,7 +60,7 @@ void TAO888_SlotCols_Init(SlotCol *slotCols, ILI9341_HandleTypeDef *lcd) {
 void TAO888_SlotCols_Offset(SlotCol *slotCols) {
   for (int i = 0; i < 5; i += 1) {
     TAO888_FrameBuffer_IncrementReadRow(&slotCols[i].frameBuffer,
-                                        ((SLOT_CELL_OFFSET_SIZE) * i));
+                                        ((SLOT_CELL_OFFSET_SIZE) * i), false);
   }
 }
 
@@ -70,22 +70,29 @@ void TAO888_SlotCols_Commit(SlotCol *slotCols, ILI9341_HandleTypeDef *lcd) {
   }
 }
 
-void TAO888_SlotCols_Scroll(SlotCol *slotCols,
-                            int8_t scrollAmount) {
-  for (int col = 0; col < 5; col += 1) {
-    if (TAO888_FrameBuffer_IncrementReadRow(&slotCols[col].frameBuffer,
-                                            scrollAmount)) {
-      const SlotSymbol newSymbol = TAO888_Utils_GetRandomSymbol();
-      TAO888_SlotCols_ReplaceHead(&slotCols[col], newSymbol);
+void TAO888_SlotCols_ScrollAll(SlotCol *slotCols,
+                            int8_t scrollAmount,
+                            bool snap) {
+  for (int index = 0; index < 5; index += 1) {
+    TAO888_SlotCols_ScrollOne(&slotCols[index], scrollAmount, snap);
+  }
+}
 
-      for (int row = 0; row < 4; row++) {
-        const SlotSymbol symbol =
-            TAO888_SlotCols_ReadIndex(&slotCols[col], row);
-        TAO888_FrameBuffer_DrawImage(
-            &slotCols[col].frameBuffer, SLOT_CELL_PADDING_X,
-            SLOT_CELL_PADDING_Y + (row * SLOT_CELL_SIZE), symbol.image.width,
-            symbol.image.height, symbol.image.data);
-      }
+void TAO888_SlotCols_ScrollOne(SlotCol *slotCol,
+                            int8_t scrollAmount,
+                            bool snap) {
+  if (TAO888_FrameBuffer_IncrementReadRow(&slotCol->frameBuffer,
+                                          scrollAmount, snap)) {
+    const SlotSymbol newSymbol = TAO888_Utils_GetRandomSymbol();
+    TAO888_SlotCols_ReplaceHead(slotCol, newSymbol);
+
+    for (int row = 0; row < 4; row++) {
+      const SlotSymbol symbol =
+          TAO888_SlotCols_ReadIndex(slotCol, row);
+      TAO888_FrameBuffer_DrawImage(
+          &slotCol->frameBuffer, SLOT_CELL_PADDING_X,
+          SLOT_CELL_PADDING_Y + (row * SLOT_CELL_SIZE), symbol.image.width,
+          symbol.image.height, symbol.image.data);
     }
   }
 }
