@@ -3,6 +3,12 @@
 #include "main.h"
 #include "serialUtils.h"
 #include "slotCols.h"
+#include "stm32f7xx_hal_rng.h"
+#include "stm32f7xx_hal_tim.h"
+#include <stdbool.h>
+#include <stdint.h>
+
+extern TIM_HandleTypeDef NS_TIMER;
 
 BannerText bannerTexts[] = {
     {12, 12, "TAO888", &ILI9341_Font_Terminus12x24b, ILI9341_COLOR_BLACK,
@@ -15,8 +21,8 @@ Banner banner = {bannerTexts, sizeof(bannerTexts) / sizeof(bannerTexts[0])};
 
 SlotCol slotCols[5];
 
-State currentState = WAITING;
-int8_t scrollAmount = -8;
+volatile State currentState = WAITING;
+volatile bool startAdvancingState = false;
 
 void TAO888_SlotMachine_Init(ILI9341_HandleTypeDef *lcd) {
   TAO888_Banner_Draw(&banner, lcd);
@@ -29,7 +35,7 @@ void TAO888_SlotMachine_Init(ILI9341_HandleTypeDef *lcd) {
   }
 
   TAO888_SlotCols_Init(slotCols, lcd);
-  TAO888_SlotCols_Commit(slotCols, lcd);
+  TAO888_SlotCols_CommitAll(slotCols, lcd);
 }
 
 void TAO888_SlotMachine_Update(ILI9341_HandleTypeDef *lcd) {
@@ -51,23 +57,65 @@ void TAO888_SlotMachine_Update(ILI9341_HandleTypeDef *lcd) {
   //   case RESULT:
   //     break;
   // }
-  const StateConfig config = stateConfig[currentState];
-  if (config.scroll) {
-    for (int index = config.scrollRowStartIndex; index < config.scrollRowEndIndex; index += 1) {
-      TAO888_SlotCols_ScrollOne(&slotCols[index], config.scrollAmount, config.scrollSnap);
+  if ((stateConfig[currentState].advanceNsLow != 0) &&
+      (HAL_TIM_Base_GetState(&NS_TIMER) != HAL_TIM_STATE_BUSY)) {
+    uint32_t advanceDelayNs = stateConfig[currentState].advanceNsLow;
+    if (stateConfig[currentState].randomAdvanceNsMod > 0) {
+      advanceDelayNs =
+          (stateConfig[currentState].advanceNsLow +
+          (HAL_RNG_GetRandomNumber(&hrng) % stateConfig[currentState].randomAdvanceNsMod))
+         ;
     }
-    TAO888_SlotCols_Commit(slotCols, lcd);
+    Serial_Printf("setting timer for %d in state %d\r\n", advanceDelayNs, currentState);
+    __HAL_TIM_SET_AUTORELOAD(&NS_TIMER, advanceDelayNs);
+    HAL_TIM_Base_Start_IT(&NS_TIMER);
+  }
+
+  if (stateConfig[currentState].scrollAmount != 0) {
+    uint8_t indexStart = stateConfig[currentState].scrollRowStartIndex;
+    if (startAdvancingState) {
+      if (slotCols[indexStart].frameBuffer.readRow == 0) {
+        startAdvancingState = false;
+        TAO888_SlotMachine_IncrementState();
+        return;
+      }
+
+      TAO888_SlotCols_ScrollOne(&slotCols[indexStart], SLOT_SCROLL_STOPPING_AMOUNT, true);
+      TAO888_SlotCols_CommitOne(&slotCols[indexStart], lcd);
+      indexStart += 1;
+    }
+
+    for (int index = indexStart;
+         index < stateConfig[currentState].scrollRowEndIndex; index += 1) {
+      TAO888_SlotCols_ScrollOne(&slotCols[index], stateConfig[currentState].scrollAmount,
+                                stateConfig[currentState].scrollSnap);
+      TAO888_SlotCols_CommitOne(&slotCols[index], lcd);
+    }
   }
 }
 
 void TAO888_SlotMachine_StartCycle() {
-  if (currentState == WAITING) currentState = SHUFFLE;
-  Serial_Printf("currentState: %d\r\n", currentState);
+  Serial_Printf("starting cycle\r\n");
+  if (currentState == WAITING)
+    TAO888_SlotMachine_IncrementState();
+}
+
+void TAO888_SlotMachine_AdvanceStateGracefully() {
+  Serial_Printf("advancing gracefully\r\n");
+  const StateConfig config = stateConfig[currentState];
+  if (config.advanceOnInput == true) {
+    TAO888_SlotMachine_IncrementState();
+  } else {
+    startAdvancingState = true;
+  }
 }
 
 void TAO888_SlotMachine_IncrementState() {
-  // currentState += 1;
-  // if (currentState >= (sizeof(stateConfig) / sizeof(stateConfig[0]))) {
-  //   currentState = WAITING;
-  // }
+  Serial_Printf("incrementing stage: %d -> ", currentState);
+  currentState += 1;
+  if (currentState >= (sizeof(stateConfig) / sizeof(stateConfig[0]))) {
+    currentState = 0;
+    TAO888_SlotCols_Offset(slotCols);
+  }
+  Serial_Printf("%d\r\n", currentState);
 }

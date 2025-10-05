@@ -18,6 +18,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "stm32f7xx_hal_tim.h"
 #include "string.h"
 
 /* Private includes ----------------------------------------------------------*/
@@ -152,6 +153,9 @@ int main(void)
   MX_RNG_Init();
   MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
+
+  HAL_TIM_Base_Init(&htim2);
+  HAL_TIM_Base_Stop_IT(&htim2);
 
   ILI9341_HandleTypeDef lcd =
       ILI9341_Init(&hspi5, LCD_CS_GPIO_Port, LCD_CS_Pin, LCD_DC_GPIO_Port,
@@ -370,7 +374,7 @@ static void MX_TIM2_Init(void)
   htim2.Instance = TIM2;
   htim2.Init.Prescaler = 108 - 1;
   htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim2.Init.Period = 1000 - 1;
+  htim2.Init.Period = 0;
   htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
@@ -570,7 +574,15 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
     Serial_Println("Received interrupt from Button-4");
   } else if (GPIO_Pin == GPIO_PIN_13) {
     // Serial_Println("Received interrupt from B1");
-    TAO888_SlotMachine_IncrementState();
+    TAO888_SlotMachine_StartCycle();
+  }
+}
+
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
+  if (htim == &htim2) {
+    Serial_Println("Received interrupt from TIM2");
+    TAO888_SlotMachine_AdvanceStateGracefully();
+    HAL_TIM_Base_Stop_IT(&htim2);
   }
 }
 

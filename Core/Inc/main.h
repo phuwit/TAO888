@@ -134,6 +134,7 @@ void Error_Handler(void);
 #define SLOT_CELL_OFFSET_SIZE -24
 #define SLOT_CELL_PADDING_X 8
 #define SLOT_CELL_PADDING_Y 8
+#define SLOT_SCROLL_STOPPING_AMOUNT -4
 
 /* USER CODE END Private defines */
 

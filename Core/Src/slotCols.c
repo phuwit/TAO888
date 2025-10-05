@@ -54,20 +54,23 @@ void TAO888_SlotCols_Init(SlotCol *slotCols, ILI9341_HandleTypeDef *lcd) {
   }
 
   TAO888_SlotCols_Offset(slotCols);
-  TAO888_SlotCols_Commit(slotCols, lcd);
+  TAO888_SlotCols_CommitAll(slotCols, lcd);
 }
 
 void TAO888_SlotCols_Offset(SlotCol *slotCols) {
   for (int i = 0; i < 5; i += 1) {
-    TAO888_FrameBuffer_IncrementReadRow(&slotCols[i].frameBuffer,
-                                        ((SLOT_CELL_OFFSET_SIZE) * i), false);
+    slotCols[i].frameBuffer.readRow = ((SLOT_CELL_OFFSET_SIZE) * i);
   }
 }
 
-void TAO888_SlotCols_Commit(SlotCol *slotCols, ILI9341_HandleTypeDef *lcd) {
+void TAO888_SlotCols_CommitAll(SlotCol *slotCols, ILI9341_HandleTypeDef *lcd) {
   for (int i = 0; i < 5; i += 1) {
-    TAO888_FrameBuffer_Commit(&slotCols[i].frameBuffer, lcd);
+    TAO888_SlotCols_CommitOne(&slotCols[i], lcd);
   }
+}
+
+void TAO888_SlotCols_CommitOne(SlotCol *slotCol, ILI9341_HandleTypeDef *lcd) {
+  TAO888_FrameBuffer_Commit(&slotCol->frameBuffer, lcd);
 }
 
 void TAO888_SlotCols_ScrollAll(SlotCol *slotCols,
@@ -78,7 +81,7 @@ void TAO888_SlotCols_ScrollAll(SlotCol *slotCols,
   }
 }
 
-void TAO888_SlotCols_ScrollOne(SlotCol *slotCol,
+bool TAO888_SlotCols_ScrollOne(SlotCol *slotCol,
                             int8_t scrollAmount,
                             bool snap) {
   if (TAO888_FrameBuffer_IncrementReadRow(&slotCol->frameBuffer,
@@ -94,5 +97,7 @@ void TAO888_SlotCols_ScrollOne(SlotCol *slotCol,
           SLOT_CELL_PADDING_Y + (row * SLOT_CELL_SIZE), symbol.image.width,
           symbol.image.height, symbol.image.data);
     }
+    return true;
   }
+  return false;
 }
