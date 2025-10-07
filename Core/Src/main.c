@@ -580,7 +580,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
   if (htim == &htim2) {
-    Serial_Println("Received interrupt from TIM2");
+    // Serial_Println("Received interrupt from TIM2");
     TAO888_SlotMachine_AdvanceStateGracefully();
     HAL_TIM_Base_Stop_IT(&htim2);
   }

@@ -20,12 +20,27 @@ BannerText bannerTexts[] = {
      ILI9341_COLOR_BLACK, ILI9341_COLOR_WHITE, 0}};
 Banner banner = {bannerTexts, sizeof(bannerTexts) / sizeof(bannerTexts[0])};
 
+static uint32_t slotSymbolsRandomLowerBound[SLOT_SYMBOLS_LENGTH];
+static uint32_t slotSymbolsRandomUpperBound;
+
 SlotCol slotCols[SLOT_CELL_COLUMNS];
 
 volatile State currentState = WAITING;
 volatile bool startAdvancingState = false;
 
 void TAO888_SlotMachine_Init(ILI9341_HandleTypeDef *lcd) {
+  for (int i = 0; i < SLOT_SYMBOLS_LENGTH; i += 1) {
+    if (i == 0) {
+      slotSymbolsRandomLowerBound[0] = 0;
+      continue;
+    }
+    slotSymbolsRandomLowerBound[i] =
+        slotSymbolsRandomLowerBound[i - 1] + slotSymbols[i - 1].weight;
+  }
+  slotSymbolsRandomUpperBound =
+      slotSymbolsRandomLowerBound[SLOT_SYMBOLS_LENGTH - 1] +
+      slotSymbols[SLOT_SYMBOLS_LENGTH - 1].weight;
+
   TAO888_Banner_Draw(&banner, lcd);
 
   // vertical lines
@@ -62,12 +77,12 @@ void TAO888_SlotMachine_Update(ILI9341_HandleTypeDef *lcd) {
       (HAL_TIM_Base_GetState(&NS_TIMER) != HAL_TIM_STATE_BUSY)) {
     uint32_t advanceDelayNs = stateConfig[currentState].advanceNsLow;
     if (stateConfig[currentState].randomAdvanceNsMod > 0) {
-      advanceDelayNs =
-          (stateConfig[currentState].advanceNsLow +
-          (HAL_RNG_GetRandomNumber(&hrng) % stateConfig[currentState].randomAdvanceNsMod))
-         ;
+      advanceDelayNs = (stateConfig[currentState].advanceNsLow +
+                        (HAL_RNG_GetRandomNumber(&hrng) %
+                         stateConfig[currentState].randomAdvanceNsMod));
     }
-    Serial_Printf("setting timer for %d in state %d\r\n", advanceDelayNs, currentState);
+    Serial_Printf("setting timer for %d in state %d\r\n", advanceDelayNs,
+                  currentState);
     __HAL_TIM_SET_AUTORELOAD(&NS_TIMER, advanceDelayNs);
     HAL_TIM_Base_Start_IT(&NS_TIMER);
   }
@@ -81,14 +96,16 @@ void TAO888_SlotMachine_Update(ILI9341_HandleTypeDef *lcd) {
         return;
       }
 
-      TAO888_SlotCols_ScrollOne(&slotCols[indexStart], SLOT_SCROLL_STOPPING_AMOUNT, true);
+      TAO888_SlotCols_ScrollOne(&slotCols[indexStart],
+                                SLOT_SCROLL_STOPPING_AMOUNT, true);
       TAO888_SlotCols_CommitOne(&slotCols[indexStart], lcd);
       indexStart += 1;
     }
 
     for (int index = indexStart;
          index < stateConfig[currentState].scrollRowEndIndex; index += 1) {
-      TAO888_SlotCols_ScrollOne(&slotCols[index], stateConfig[currentState].scrollAmount,
+      TAO888_SlotCols_ScrollOne(&slotCols[index],
+                                stateConfig[currentState].scrollAmount,
                                 stateConfig[currentState].scrollSnap);
       TAO888_SlotCols_CommitOne(&slotCols[index], lcd);
     }
@@ -124,10 +141,23 @@ void TAO888_SlotMachine_IncrementState() {
   Serial_Printf("%d\r\n", currentState);
 }
 
-void TAO888_SlotMachine_GetPayoutSymbols(SlotSymbol* symbolReciever) {
-  for(uint8_t col = 0; col < SLOT_CELL_COLUMNS; col += 1) {
-    for(uint8_t row = 0; row < SLOT_CELL_ROWS; row += 1) {
-      symbolReciever[(col * SLOT_CELL_ROWS) + row] = TAO888_SlotColQueue_ReadIndex(&slotCols[col], row);
+SlotSymbol TAO888_SlotMachine_GetRandomSymbol() {
+  uint32_t randomNum =
+      (HAL_RNG_GetRandomNumber(&hrng) % slotSymbolsRandomUpperBound) + 1;
+  uint32_t i = SLOT_SYMBOLS_LENGTH - 1;
+
+  for (; i >=0; i -= 1) {
+    if (randomNum >= slotSymbolsRandomLowerBound[i])
+      break;
+  }
+  return slotSymbols[i];
+}
+
+void TAO888_SlotMachine_GetPayoutSymbols(SlotSymbol *symbolReciever) {
+  for (uint8_t col = 0; col < SLOT_CELL_COLUMNS; col += 1) {
+    for (uint8_t row = 0; row < SLOT_CELL_ROWS; row += 1) {
+      symbolReciever[(col * SLOT_CELL_ROWS) + row] =
+          TAO888_SlotColQueue_ReadIndex(&slotCols[col], row);
     }
   }
 }

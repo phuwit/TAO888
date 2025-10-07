@@ -3,8 +3,8 @@
 #include "frameBuffer.h"
 #include "ili9341.h"
 #include "main.h"
+#include "slotMachine.h"
 #include "slotSymbols.h"
-#include "utils.h"
 #include <stdint.h>
 
 void TAO888_SlotColQueue_Enqueue(SlotCol *slotCol, SlotSymbol symbol) {
@@ -37,7 +37,7 @@ void TAO888_SlotCols_Init(SlotCol *slotCols, ILI9341_HandleTypeDef *lcd) {
     TAO888_FrameBuffer_Fill(&slotCols[col].frameBuffer, ILI9341_COLOR_WHITE);
 
     for (int row = 0; row < 4; row++) {
-      SlotSymbol symbol = TAO888_Utils_GetRandomSymbol();
+      SlotSymbol symbol = TAO888_SlotMachine_GetRandomSymbol();
       TAO888_SlotColQueue_Enqueue(&slotCols[col], symbol);
 
       TAO888_FrameBuffer_DrawImage(
@@ -86,7 +86,7 @@ bool TAO888_SlotCols_ScrollOne(SlotCol *slotCol,
                             bool snap) {
   if (TAO888_FrameBuffer_IncrementReadRow(&slotCol->frameBuffer,
                                           scrollAmount, snap)) {
-    const SlotSymbol newSymbol = TAO888_Utils_GetRandomSymbol();
+    const SlotSymbol newSymbol = TAO888_SlotMachine_GetRandomSymbol();
     TAO888_SlotColQueue_ReplaceHead(slotCol, newSymbol);
 
     for (int row = 0; row < 4; row++) {

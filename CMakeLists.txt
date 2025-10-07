@@ -46,7 +46,6 @@ target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user sources here
     Core/Src/queue.c
-    Core/Src/utils.c
     Core/Src/serialUtils.c
     Core/Src/frameBuffer.c
     Core/Src/banner.c
