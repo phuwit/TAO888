@@ -2,6 +2,7 @@
 #define TAO888_SLOT_MACHINE
 
 #define NS_TIMER htim2
+#define MINIMUM_UPDATE_MS 15
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -22,8 +23,8 @@ typedef enum {
 
 typedef struct {
   bool advanceOnInput;
-  uint32_t advanceNsLow;
-  uint32_t randomAdvanceNsMod;
+  uint32_t advanceMicroSecLow;
+  uint32_t randomAdvanceMicroSecMod;
   int8_t scrollAmount;
   uint8_t scrollRowStartIndex;
   uint8_t scrollRowEndIndex;

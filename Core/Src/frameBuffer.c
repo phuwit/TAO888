@@ -16,8 +16,8 @@ FrameBuffer TAO888_FrameBuffer_Initialize(const uint16_t x, const uint16_t y,
   frameBuffer.paddingBottom = paddingBottom;
   frameBuffer.paddingLeft = paddingLeft;
   frameBuffer.paddingRight = paddingRight;
-  frameBuffer.readRow = paddingTop;
-  frameBuffer.readColumn = paddingLeft;
+  frameBuffer.readRow = 0;
+  frameBuffer.readColumn = 0;
   frameBuffer.bufferWidth = writableWidth + paddingLeft + paddingRight;
   frameBuffer.bufferHeight = writableHeight + paddingTop + paddingBottom;
   frameBuffer.buffer =
@@ -27,35 +27,78 @@ FrameBuffer TAO888_FrameBuffer_Initialize(const uint16_t x, const uint16_t y,
 }
 
 bool TAO888_FrameBuffer_IncrementReadRow(FrameBuffer *frameBuffer,
-                                         const int16_t amount, bool snap) {
-  frameBuffer->readRow += amount;
+                                         const int16_t amount) {
+    // Save the old row to detect a loop
+    const int16_t oldReadRow = frameBuffer->readRow;
 
-  if (frameBuffer->readRow < 0 || frameBuffer->readRow >= frameBuffer->bufferHeight) {
-    if (snap) frameBuffer->readRow = frameBuffer->paddingTop;
-    else frameBuffer->readRow = (frameBuffer->readRow + frameBuffer->paddingTop) % frameBuffer->bufferHeight;
-    return true;
-  }
-  return false;
+    // Apply the increment
+    frameBuffer->readRow += amount;
+
+    // Handle wrapping around the bufferHeight
+    if (frameBuffer->readRow >= frameBuffer->bufferHeight) {
+        frameBuffer->readRow %= frameBuffer->bufferHeight;
+    } else if (frameBuffer->readRow < 0) {
+        // Ensure the result is positive after looping backwards
+        frameBuffer->readRow = (frameBuffer->readRow % frameBuffer->bufferHeight) + frameBuffer->bufferHeight;
+    }
+
+    // A loop occurred if the new row is less than the old one after a positive increment
+    // or greater after a negative increment.
+    if ((amount > 0 && frameBuffer->readRow < oldReadRow) ||
+        (amount < 0 && frameBuffer->readRow > oldReadRow)) {
+        return true;
+    }
+
+    return false;
 }
 
+// A simplified and more robust increment for the column
 bool TAO888_FrameBuffer_IncrementReadColumn(FrameBuffer *frameBuffer,
-                                            const int16_t amount, bool snap) {
-  frameBuffer->readColumn += amount;
+                                            const int16_t amount) {
+    const int16_t oldReadColumn = frameBuffer->readColumn;
+    frameBuffer->readColumn += amount;
 
-  if (frameBuffer->readColumn < 0 || frameBuffer->readColumn >= frameBuffer->bufferWidth) {
-    if (snap) frameBuffer->readColumn = frameBuffer->paddingTop;
-    else frameBuffer->readColumn = (frameBuffer->readColumn) % frameBuffer->bufferHeight;
-    return true;
-  }
-  return false;
+    if (frameBuffer->readColumn >= frameBuffer->bufferWidth) {
+        frameBuffer->readColumn %= frameBuffer->bufferWidth;
+    } else if (frameBuffer->readColumn < 0) {
+        frameBuffer->readColumn = (frameBuffer->readColumn % frameBuffer->bufferWidth) + frameBuffer->bufferWidth;
+    }
+
+    if ((amount > 0 && frameBuffer->readColumn < oldReadColumn) ||
+        (amount < 0 && frameBuffer->readColumn > oldReadColumn)) {
+        return true;
+    }
+    return false;
 }
 
 void TAO888_FrameBuffer_Commit(const FrameBuffer *frameBuffer,
                                ILI9341_HandleTypeDef *ili9341) {
-  const uint16_t *startPtr = frameBuffer->buffer + (frameBuffer->readRow * frameBuffer->bufferWidth);
-  ILI9341_DrawImage(ili9341, frameBuffer->x, frameBuffer->y,
-                    frameBuffer->writableWidth, frameBuffer->writableHeight,
-                    startPtr);
+
+    // Calculate the number of rows from the readRow to the bottom of the buffer
+    uint16_t rowsToEnd = frameBuffer->bufferHeight - frameBuffer->readRow;
+
+    if (rowsToEnd >= frameBuffer->writableHeight) {
+        // No wrapping needed, the entire writable area is contiguous in memory
+        const uint16_t *startPtr = frameBuffer->buffer + (frameBuffer->readRow * frameBuffer->bufferWidth) + frameBuffer->readColumn;
+        ILI9341_DrawImage(ili9341, frameBuffer->x, frameBuffer->y,
+                          frameBuffer->writableWidth, frameBuffer->writableHeight,
+                          startPtr);
+    } else {
+        // Wrapping is needed, draw in two parts
+
+        // Part 1: From the current readRow to the end of the buffer
+        const uint16_t *firstPartPtr = frameBuffer->buffer + (frameBuffer->readRow * frameBuffer->bufferWidth) + frameBuffer->readColumn;
+        ILI9341_DrawImage(ili9341, frameBuffer->x, frameBuffer->y,
+                          frameBuffer->writableWidth, rowsToEnd,
+                          firstPartPtr);
+
+        // Part 2: From the beginning of the buffer to fill the remaining writableHeight
+        uint16_t remainingRows = frameBuffer->writableHeight - rowsToEnd;
+        const uint16_t *secondPartPtr = frameBuffer->buffer + frameBuffer->readColumn; // Start from the top of the buffer
+        ILI9341_DrawImage(ili9341, frameBuffer->x, frameBuffer->y + rowsToEnd,
+                          frameBuffer->writableWidth, remainingRows,
+                          secondPartPtr);
+    }
 }
 
 void TAO888_FrameBuffer_Fill(FrameBuffer *frameBuffer, const uint16_t color) {

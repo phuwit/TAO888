@@ -6,6 +6,7 @@
 #include "slotMachine.h"
 #include "slotSymbols.h"
 #include <stdint.h>
+#include <stdlib.h>
 
 void TAO888_SlotColQueue_Enqueue(SlotCol *slotCol, SlotSymbol symbol) {
   slotCol->symbolQueue[slotCol->symbolQueueTailIndex] = symbol;
@@ -34,6 +35,8 @@ void TAO888_SlotCols_Init(SlotCol *slotCols, ILI9341_HandleTypeDef *lcd) {
         0, 0, 0);
     slotCols[col].symbolQueueTailIndex = 0;
     slotCols[col].symbolQueueUsedSize = 0;
+    slotCols[col].scrolled = 0;
+
     TAO888_FrameBuffer_Fill(&slotCols[col].frameBuffer, ILI9341_COLOR_WHITE);
 
     for (int row = 0; row < 4; row++) {
@@ -59,7 +62,8 @@ void TAO888_SlotCols_Init(SlotCol *slotCols, ILI9341_HandleTypeDef *lcd) {
 
 void TAO888_SlotCols_Offset(SlotCol *slotCols) {
   for (int i = 0; i < 5; i += 1) {
-    slotCols[i].frameBuffer.readRow = ((SLOT_CELL_OFFSET_SIZE) * i);
+    // slotCols[i].frameBuffer.readRow = ((SLOT_CELL_OFFSET_SIZE) * i);
+    TAO888_SlotCols_ScrollOne(&slotCols[i], (SLOT_CELL_OFFSET_SIZE) * i, true);
   }
 }
 
@@ -84,19 +88,22 @@ void TAO888_SlotCols_ScrollAll(SlotCol *slotCols,
 bool TAO888_SlotCols_ScrollOne(SlotCol *slotCol,
                             int8_t scrollAmount,
                             bool snap) {
-  if (TAO888_FrameBuffer_IncrementReadRow(&slotCol->frameBuffer,
-                                          scrollAmount, snap)) {
+  slotCol->scrolled += abs(scrollAmount);
+  TAO888_FrameBuffer_IncrementReadRow(&slotCol->frameBuffer,
+              scrollAmount);
+
+  if (slotCol->scrolled >= SLOT_CELL_SIZE) {
+    slotCol->scrolled -= SLOT_CELL_SIZE;
+
     const SlotSymbol newSymbol = TAO888_SlotMachine_GetRandomSymbol();
     TAO888_SlotColQueue_ReplaceHead(slotCol, newSymbol);
 
-    for (int row = 0; row < 4; row++) {
-      const SlotSymbol symbol =
-          TAO888_SlotColQueue_ReadIndex(slotCol, row);
-      TAO888_FrameBuffer_DrawImage(
-          &slotCol->frameBuffer, SLOT_CELL_PADDING_X,
-          SLOT_CELL_PADDING_Y + (row * SLOT_CELL_SIZE), symbol.image.width,
-          symbol.image.height, symbol.image.data);
-    }
+    const SlotSymbol symbol =
+        TAO888_SlotColQueue_ReadIndex(slotCol, 0);
+    TAO888_FrameBuffer_DrawImage(
+        &slotCol->frameBuffer, SLOT_CELL_PADDING_X,
+        SLOT_CELL_PADDING_Y + ((slotCol->symbolQueueTailIndex - 1) * SLOT_CELL_SIZE), symbol.image.width,
+        symbol.image.height, symbol.image.data);
     return true;
   }
   return false;

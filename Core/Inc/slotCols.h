@@ -16,6 +16,8 @@ typedef struct {
   SlotSymbol symbolQueue[SYMBOL_QUEUE_SIZE];
   uint8_t symbolQueueTailIndex;
   uint8_t symbolQueueUsedSize;
+  uint16_t scrolled;
+  uint16_t replaceRow;
 } SlotCol;
 
 void TAO888_SlotColQueue_Enqueue(SlotCol *slotCol, SlotSymbol symbol);
