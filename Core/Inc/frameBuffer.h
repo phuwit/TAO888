@@ -27,12 +27,12 @@ FrameBuffer TAO888_FrameBuffer_Initialize(
 
 // returns false if incremented, true if incremented and looped
 bool TAO888_FrameBuffer_IncrementReadRow(FrameBuffer *frameBuffer,
-                                         const int16_t amount,
-                                         bool snap);
+                                         const int16_t amount
+                                         );
 
 bool TAO888_FrameBuffer_IncrementReadColumn(FrameBuffer *frameBuffer,
-                                            const int16_t amount,
-                                            bool snap);
+                                            const int16_t amount
+                                            );
 
 void TAO888_FrameBuffer_Commit(const FrameBuffer *frameBuffer,
                                ILI9341_HandleTypeDef *ili9341);

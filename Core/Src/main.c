@@ -561,26 +561,26 @@ static void MX_GPIO_Init(void)
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
   // EXTI interrupts callback
   if (GPIO_Pin == GPIO_PIN_2) {
-    Serial_Println("Received interrupt from EXTI-2");
+    Serial_Debug_Println("Received interrupt from EXTI-2");
   } else if (GPIO_Pin == GPIO_PIN_3) {
-    Serial_Println("Received interrupt from EXTI-3");
+    Serial_Debug_Println("Received interrupt from EXTI-3");
   } else if (GPIO_Pin == GPIO_PIN_9) {
-    Serial_Println("Received interrupt from Button-1");
+    Serial_Debug_Println("Received interrupt from Button-1");
   } else if (GPIO_Pin == GPIO_PIN_10) {
-    Serial_Println("Received interrupt from Button-2");
+    Serial_Debug_Println("Received interrupt from Button-2");
   } else if (GPIO_Pin == GPIO_PIN_11) {
-    Serial_Println("Received interrupt from Button-3");
+    Serial_Debug_Println("Received interrupt from Button-3");
   } else if (GPIO_Pin == GPIO_PIN_12) {
-    Serial_Println("Received interrupt from Button-4");
+    Serial_Debug_Println("Received interrupt from Button-4");
   } else if (GPIO_Pin == GPIO_PIN_13) {
-    // Serial_Println("Received interrupt from B1");
+    // Serial_Debug_Println("Received interrupt from B1");
     TAO888_SlotMachine_StartCycle();
   }
 }
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
   if (htim == &htim2) {
-    // Serial_Println("Received interrupt from TIM2");
+    // Serial_Debug_Println("Received interrupt from TIM2");
     TAO888_SlotMachine_AdvanceStateGracefully();
     HAL_TIM_Base_Stop_IT(&htim2);
   }

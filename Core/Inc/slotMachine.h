@@ -46,7 +46,9 @@ void TAO888_SlotMachine_Update(ILI9341_HandleTypeDef *lcd);
 void TAO888_SlotMachine_StartCycle();
 void TAO888_SlotMachine_AdvanceStateGracefully();
 void TAO888_SlotMachine_IncrementState();
+__weak void TAO888_SlotMachine_RoundEndCallback(SlotSymbol* displayedSymbols);
+__weak void TAO888_SlotMachine_PayoutCallback(uint16_t credits);
 SlotSymbol TAO888_SlotMachine_GetRandomSymbol();
-void TAO888_SlotMachine_GetPayoutSymbols(SlotSymbol* symbolReciever);
+void TAO888_SlotMachine_GetDisplayedSymbols(SlotSymbol* symbolReciever);
 
 #endif

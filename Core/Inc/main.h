@@ -127,6 +127,8 @@ void Error_Handler(void);
 
 /* USER CODE BEGIN Private defines */
 
+#define DEBUG_PRINT
+
 #define LCD_WIDTH 320
 #define LCD_HEIGHT 240
 #define BANNER_SIZE 48

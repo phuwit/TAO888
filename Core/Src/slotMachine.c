@@ -81,7 +81,7 @@ void TAO888_SlotMachine_Update(ILI9341_HandleTypeDef *lcd) {
                         (HAL_RNG_GetRandomNumber(&hrng) %
                          stateConfig[currentState].randomAdvanceNsMod));
     }
-    Serial_Printf("setting timer for %d in state %d\r\n", advanceDelayNs,
+    Serial_Debug_Printf("setting timer for %d in state %d\r\n", advanceDelayNs,
                   currentState);
     __HAL_TIM_SET_AUTORELOAD(&NS_TIMER, advanceDelayNs);
     HAL_TIM_Base_Start_IT(&NS_TIMER);
@@ -113,13 +113,13 @@ void TAO888_SlotMachine_Update(ILI9341_HandleTypeDef *lcd) {
 }
 
 void TAO888_SlotMachine_StartCycle() {
-  Serial_Printf("starting cycle\r\n");
+  Serial_Debug_Printf("starting cycle\r\n");
   if (currentState == WAITING)
     TAO888_SlotMachine_IncrementState();
 }
 
 void TAO888_SlotMachine_AdvanceStateGracefully() {
-  Serial_Printf("advancing gracefully\r\n");
+  Serial_Debug_Printf("advancing gracefully\r\n");
   const StateConfig config = stateConfig[currentState];
   if (config.advanceOnInput == true) {
     TAO888_SlotMachine_IncrementState();
@@ -129,16 +129,27 @@ void TAO888_SlotMachine_AdvanceStateGracefully() {
 }
 
 void TAO888_SlotMachine_IncrementState() {
-  Serial_Printf("incrementing stage: %d -> ", currentState);
+  Serial_Debug_Printf("incrementing stage: %d", currentState);
   currentState += 1;
   if (currentState >= (sizeof(stateConfig) / sizeof(stateConfig[0]))) {
     currentState = 0;
     TAO888_SlotCols_Offset(slotCols);
     SlotSymbol symbolReciever[SLOT_CELL_COLUMNS * SLOT_CELL_ROWS];
-    TAO888_SlotMachine_GetPayoutSymbols(symbolReciever);
-    Serial_Printf("%x", symbolReciever);
+    TAO888_SlotMachine_GetDisplayedSymbols(symbolReciever);
+    TAO888_SlotMachine_RoundEndCallback(symbolReciever);
   }
-  Serial_Printf("%d\r\n", currentState);
+  Serial_Debug_Printf(" -> %d\r\n", currentState);
+}
+
+__weak void TAO888_SlotMachine_RoundEndCallback(SlotSymbol* displayedSymbols) {
+  // replace with real implementation
+  Serial_Debug_Printf("\r\ndisplayed symbol pointer: %x\r\n", displayedSymbols);
+  TAO888_SlotMachine_PayoutCallback(20);
+}
+
+__weak void TAO888_SlotMachine_PayoutCallback(uint16_t credits) {
+  // replace with real implementation
+  Serial_Debug_Printf("\r\npaying out: %ld\r\n", credits);
 }
 
 SlotSymbol TAO888_SlotMachine_GetRandomSymbol() {
@@ -153,7 +164,7 @@ SlotSymbol TAO888_SlotMachine_GetRandomSymbol() {
   return slotSymbols[i];
 }
 
-void TAO888_SlotMachine_GetPayoutSymbols(SlotSymbol *symbolReciever) {
+void TAO888_SlotMachine_GetDisplayedSymbols(SlotSymbol *symbolReciever) {
   for (uint8_t col = 0; col < SLOT_CELL_COLUMNS; col += 1) {
     for (uint8_t row = 0; row < SLOT_CELL_ROWS; row += 1) {
       symbolReciever[(col * SLOT_CELL_ROWS) + row] =

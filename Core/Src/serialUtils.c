@@ -38,3 +38,32 @@ void Serial_Println(const char *str) {
   Serial_Print(str);
   Serial_Print("\r\n");
 }
+
+void Serial_Debug_Print(const char *str) {
+  #ifdef DEBUG_PRINT
+  uint8_t retry = 0;
+  while (HAL_UART_Transmit(&UART_HANDLE, (uint8_t *)str, strlen(str), HAL_MAX_DELAY) != HAL_OK && retry < UART_RETRY) {
+    retry++;
+  }
+  #endif
+}
+
+void Serial_Debug_Printf(const char *format, ...) {
+  #ifdef DEBUG_PRINT
+  char buffer[2048];
+  va_list args;
+
+  va_start(args, format);
+  vsnprintf(buffer, sizeof(buffer), format, args);
+  va_end(args);
+
+  Serial_Print(buffer);
+  #endif
+}
+
+void Serial_Debug_Println(const char *str) {
+  #ifdef DEBUG_PRINT
+  Serial_Print(str);
+  Serial_Print("\r\n");
+  #endif
+}
