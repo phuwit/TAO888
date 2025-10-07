@@ -4,9 +4,6 @@
 #include <stdint.h>
 #include "ili9341.h"
 
-#define SCREEN_WIDTH 480
-#define SCREEN_HEIGHT 320
-
 typedef struct {
   uint16_t x;
   uint16_t y;
