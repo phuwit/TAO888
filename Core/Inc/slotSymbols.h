@@ -2,86 +2,46 @@
 #define TAO888_SLOTSYMBOLS
 
 #include "images.h"
+#include <stdint.h>
+#include <stdlib.h>
+#include <time.h>
 
+// -------------------- SYMBOL STRUCT --------------------
 typedef struct {
+  uint8_t index;
   Image image;
-  uint32_t weight;
-  uint32_t prizeMultiplier;
+  uint8_t weight;
+  uint8_t prizeMultiplier;
 } SlotSymbol;
 
-static const SlotSymbol APPLE_SYMBOL = {
-  APPLE_IMAGE,
-  10000,
-  1
-};
-static const SlotSymbol BANANA_SYMBOL = {
-  BANANA_IMAGE,
-  9000,
-  2
-};
-static const SlotSymbol BLUEBERRY_SYMBOL = {
-  BLUEBERRY_IMAGE,
-  8000,
-  3
-};
-static const SlotSymbol CHERRY_SYMBOL = {
-  CHERRY_IMAGE,
-  7000,
-  4
-};
-static const SlotSymbol GRAPE_SYMBOL = {
-  GRAPE_IMAGE,
-  6000,
-  5
-};
-static const SlotSymbol HAZELNUT_SYMBOL = {
-  HAZELNUT_IMAGE,
-  5000,
-  10
-};
-static const SlotSymbol LIME_SYMBOL = {
-  LIME_IMAGE,
-  4000,
-  15
-};
-static const SlotSymbol MANGOSTEEN_SYMBOL = {
-  MANGOSTEEN_IMAGE,
-  3000,
-  20
-};
-static const SlotSymbol ORANGE_SYMBOl = {
-  ORANGE_IMAGE,
-  2000,
-  25
-};
-static const SlotSymbol STRAWBERRY_SYMBOL = {
-  STRAWBERRY_IMAGE,
-  1000,
-  30
-};
-static const SlotSymbol WATERMELON_SYMBOL = {
-  WATERMELON_IMAGE,
-  500,
-  70
-};
-static const SlotSymbol PEACH_SYMBOL = {
-  PEACH_IMAGE,
-  200,
-  150
-};
-static const SlotSymbol SCATTER_SYMBOL = {
-  SCATTER_IMAGE,
-  80,
-  400
-};
-static const SlotSymbol WILD_SYMBOL = {
-  WILD_IMAGE,
-  50,
-  500
-};
+// -------------------- SYMBOLS --------------------
+// static const SlotSymbol APPLE_SYMBOL       = {0, APPLE_IMAGE,       30, 1 };
+static const SlotSymbol BANANA_SYMBOL = {1, BANANA_IMAGE, 25, 1};
+static const SlotSymbol BLUEBERRY_SYMBOL = {2, BLUEBERRY_IMAGE, 20, 2};
+static const SlotSymbol CHERRY_SYMBOL = {3, CHERRY_IMAGE, 15, 3};
+static const SlotSymbol GRAPE_SYMBOL = {4, GRAPE_IMAGE, 15, 3};
+static const SlotSymbol HAZELNUT_SYMBOL = {5, HAZELNUT_IMAGE, 10, 4};
+// static const SlotSymbol LIME_SYMBOL        = {6, LIME_IMAGE,        10, 4 };
+// static const SlotSymbol MANGOSTEEN_SYMBOL  = {7, MANGOSTEEN_IMAGE,   8, 5 };
+// static const SlotSymbol ORANGE_SYMBOL = {8, ORANGE_IMAGE, 8, 5};
+static const SlotSymbol PEACH_SYMBOL = {9, PEACH_IMAGE, 6, 6};
+static const SlotSymbol STRAWBERRY_SYMBOL = {10, STRAWBERRY_IMAGE, 5, 7};
+static const SlotSymbol WATERMELON_SYMBOL = {11, WATERMELON_IMAGE, 4, 8};
+static const SlotSymbol SCATTER_SYMBOL = {12, SCATTER_IMAGE, 3, 0};
+static const SlotSymbol WILD_SYMBOL = {13, WILD_IMAGE, 2, 0};
 
-#define SLOT_SYMBOLS_LENGTH 14
+#define SLOT_SYMBOLS_LENGTH 10
 
-static const SlotSymbol slotSymbols[SLOT_SYMBOLS_LENGTH] = { APPLE_SYMBOL, BANANA_SYMBOL, BLUEBERRY_SYMBOL, CHERRY_SYMBOL, GRAPE_SYMBOL, HAZELNUT_SYMBOL, LIME_SYMBOL, MANGOSTEEN_SYMBOL, ORANGE_SYMBOl, PEACH_SYMBOL, STRAWBERRY_SYMBOL, WATERMELON_SYMBOL, SCATTER_SYMBOL, WILD_SYMBOL };
+// static const SlotSymbol slotSymbols[] = {
+//     APPLE_SYMBOL, BANANA_SYMBOL, BLUEBERRY_SYMBOL, CHERRY_SYMBOL,
+//     GRAPE_SYMBOL, HAZELNUT_SYMBOL, LIME_SYMBOL, MANGOSTEEN_SYMBOL,
+//     ORANGE_SYMBOL, PEACH_SYMBOL, STRAWBERRY_SYMBOL, WATERMELON_SYMBOL,
+//     SCATTER_SYMBOL, WILD_SYMBOL
+// };
+
+static const SlotSymbol slotSymbols[] = {
+    BANANA_SYMBOL,   BLUEBERRY_SYMBOL, CHERRY_SYMBOL,     GRAPE_SYMBOL,
+    HAZELNUT_SYMBOL, PEACH_SYMBOL,     STRAWBERRY_SYMBOL, WATERMELON_SYMBOL,
+    SCATTER_SYMBOL,  WILD_SYMBOL};
 
 #endif

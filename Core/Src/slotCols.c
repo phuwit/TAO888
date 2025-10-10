@@ -102,7 +102,7 @@ bool TAO888_SlotCols_ScrollOne(SlotCol *slotCol,
         TAO888_SlotColQueue_ReadIndex(slotCol, 0);
     TAO888_FrameBuffer_DrawImage(
         &slotCol->frameBuffer, SLOT_CELL_PADDING_X,
-        SLOT_CELL_PADDING_Y + ((slotCol->symbolQueueTailIndex - 1) * SLOT_CELL_SIZE), symbol.image.width,
+        SLOT_CELL_PADDING_Y + (((slotCol->symbolQueueTailIndex - 1 + (WRITABLE_COL_CELLS + TOP_PADDING_CELLS)) % (WRITABLE_COL_CELLS + TOP_PADDING_CELLS)) * SLOT_CELL_SIZE), symbol.image.width,
         symbol.image.height, symbol.image.data);
     return true;
   }
