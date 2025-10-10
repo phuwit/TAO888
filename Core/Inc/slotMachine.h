@@ -33,12 +33,12 @@ typedef struct {
 
 static const StateConfig stateConfig[] = {
     {true, 0, 0, -12, 0, 5, false},
-    {false, 2000000, 1000000, -24, 0, 5, false},
-    {false, 2000000, 1000000, -8, 0, 5, true},
-    {false, 2000000, 1000000, -8, 1, 5, true},
-    {false, 2000000, 1000000, -8, 2, 5, true},
-    {false, 2000000, 1000000, -8, 3, 5, true},
-    {false, 2000000, 1000000, -8, 4, 5, true},
+    {false, 1500000, 500000, -24, 0, 5, false},
+    {false, 1000000, 500000, -8, 0, 5, true},
+    {false, 1000000, 500000, -8, 1, 5, true},
+    {false, 1000000, 500000, -8, 2, 5, true},
+    {false, 1000000, 500000, -8, 3, 5, true},
+    {false, 1000000, 500000, -8, 4, 5, true},
     {true, 2000000, 0, 0, 0, 0, true},
 };
 

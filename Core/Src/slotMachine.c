@@ -87,7 +87,7 @@ void TAO888_SlotMachine_Update(ILI9341_HandleTypeDef *lcd) {
   if (stateConfig[currentState].scrollAmount != 0) {
     uint8_t indexStart = stateConfig[currentState].scrollRowStartIndex;
     if (startAdvancingState) {
-      if ((currentState == WAITING || currentState == SHUFFLE) || (slotCols[indexStart].frameBuffer.readRow == 0)) {
+      if ((currentState == WAITING || currentState == SHUFFLE) || ((slotCols[indexStart].frameBuffer.readRow % SLOT_CELL_SIZE) == 0)) {
         startAdvancingState = false;
         TAO888_SlotMachine_IncrementState();
         return;
