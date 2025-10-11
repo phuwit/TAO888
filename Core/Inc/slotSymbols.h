@@ -16,19 +16,19 @@ typedef struct {
 
 // -------------------- SYMBOLS --------------------
 // static const SlotSymbol APPLE_SYMBOL       = {0, APPLE_IMAGE,       30, 1 };
-static const SlotSymbol BANANA_SYMBOL = {1, BANANA_IMAGE, 25, 1};
-static const SlotSymbol BLUEBERRY_SYMBOL = {2, BLUEBERRY_IMAGE, 20, 2};
-static const SlotSymbol CHERRY_SYMBOL = {3, CHERRY_IMAGE, 15, 3};
-static const SlotSymbol GRAPE_SYMBOL = {4, GRAPE_IMAGE, 15, 3};
-static const SlotSymbol HAZELNUT_SYMBOL = {5, HAZELNUT_IMAGE, 10, 4};
+static const SlotSymbol BANANA_SYMBOL = {0, BANANA_IMAGE, 25, 1};
+static const SlotSymbol BLUEBERRY_SYMBOL = {1, BLUEBERRY_IMAGE, 20, 2};
+static const SlotSymbol CHERRY_SYMBOL = {2, CHERRY_IMAGE, 15, 3};
+static const SlotSymbol GRAPE_SYMBOL = {3, GRAPE_IMAGE, 15, 3};
+static const SlotSymbol HAZELNUT_SYMBOL = {4, HAZELNUT_IMAGE, 10, 4};
 // static const SlotSymbol LIME_SYMBOL        = {6, LIME_IMAGE,        10, 4 };
 // static const SlotSymbol MANGOSTEEN_SYMBOL  = {7, MANGOSTEEN_IMAGE,   8, 5 };
 // static const SlotSymbol ORANGE_SYMBOL = {8, ORANGE_IMAGE, 8, 5};
-static const SlotSymbol PEACH_SYMBOL = {9, PEACH_IMAGE, 6, 6};
-static const SlotSymbol STRAWBERRY_SYMBOL = {10, STRAWBERRY_IMAGE, 5, 7};
-static const SlotSymbol WATERMELON_SYMBOL = {11, WATERMELON_IMAGE, 4, 8};
-static const SlotSymbol SCATTER_SYMBOL = {12, SCATTER_IMAGE, 3, 0};
-static const SlotSymbol WILD_SYMBOL = {13, WILD_IMAGE, 2, 0};
+static const SlotSymbol PEACH_SYMBOL = {5, PEACH_IMAGE, 6, 6};
+static const SlotSymbol STRAWBERRY_SYMBOL = {6, STRAWBERRY_IMAGE, 5, 7};
+static const SlotSymbol WATERMELON_SYMBOL = {7, WATERMELON_IMAGE, 4, 8};
+static const SlotSymbol WILD_SYMBOL = {8, WILD_IMAGE, 3, 0};
+static const SlotSymbol SCATTER_SYMBOL = {9, SCATTER_IMAGE, 2, 0};
 
 #define SLOT_SYMBOLS_LENGTH 10
 
@@ -42,6 +42,6 @@ static const SlotSymbol WILD_SYMBOL = {13, WILD_IMAGE, 2, 0};
 static const SlotSymbol slotSymbols[] = {
     BANANA_SYMBOL,   BLUEBERRY_SYMBOL, CHERRY_SYMBOL,     GRAPE_SYMBOL,
     HAZELNUT_SYMBOL, PEACH_SYMBOL,     STRAWBERRY_SYMBOL, WATERMELON_SYMBOL,
-    SCATTER_SYMBOL,  WILD_SYMBOL};
+    WILD_SYMBOL, SCATTER_SYMBOL};
 
 #endif

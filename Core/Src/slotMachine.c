@@ -12,6 +12,8 @@
 
 extern TIM_HandleTypeDef NS_TIMER;
 
+
+
 BannerText bannerTexts[] = {
     {12, 12, "TAO888", &ILI9341_Font_Terminus12x24b, ILI9341_COLOR_BLACK,
      ILI9341_COLOR_WHITE, 0},
@@ -159,129 +161,249 @@ void TAO888_SlotMachine_IncrementState() {
   Serial_Debug_Printf(" -> %d\r\n", currentState);
 }
 
-__weak void TAO888_SlotMachine_RoundEndCallback(SlotSymbol *displayedSymbols) {
-  uint16_t totalCredits = 0;
-
-  // -------------------- HORIZONTAL --------------------
-  for (int r = 0; r < SLOT_CELL_ROWS; r++) {
-    int count = 1;
-    SlotSymbol *current = &displayedSymbols[r * SLOT_CELL_COLUMNS];
-    for (int c = 1; c < SLOT_CELL_COLUMNS; c++) {
-      SlotSymbol *next = &displayedSymbols[r * SLOT_CELL_COLUMNS + c];
-
-      if (next->index == WILD_SYMBOL.index ||
-          current->index == WILD_SYMBOL.index ||
-          next->index == current->index) {
-        count++;
-        if (current->index == WILD_SYMBOL.index &&
-            next->index != WILD_SYMBOL.index)
-          current = next;
-      } else {
-        if (count >= 3) {
-          if (current->index == WILD_SYMBOL.index)
-            totalCredits += count * 10 * 10;
-          else
-            totalCredits += count * current->prizeMultiplier * 10;
-        }
-        count = 1;
-        current = next;
-      }
-    }
-    if (count >= 3) {
-      if (current->index == WILD_SYMBOL.index)
-        totalCredits += count * 10 * 10;
-      else
-        totalCredits += count * current->prizeMultiplier * 10;
-    }
-  }
-
-  // -------------------- VERTICAL --------------------
-  for (int c = 0; c < SLOT_CELL_COLUMNS; c++) {
-    int count = 1;
-    SlotSymbol *current = &displayedSymbols[c]; // first row in column
-    for (int r = 1; r < SLOT_CELL_ROWS; r++) {
-      SlotSymbol *next = &displayedSymbols[r * SLOT_CELL_COLUMNS + c];
-
-      if (next->index == WILD_SYMBOL.index ||
-          current->index == WILD_SYMBOL.index ||
-          next->index == current->index) {
-        count++;
-        if (current->index == WILD_SYMBOL.index &&
-            next->index != WILD_SYMBOL.index)
-          current = next;
-      } else {
-        if (count >= 3) {
-          if (current->index == WILD_SYMBOL.index)
-            totalCredits += count * 10 * 10;
-          else
-            totalCredits += count * current->prizeMultiplier * 10;
-        }
-        count = 1;
-        current = next;
-      }
-    }
-    if (count >= 3) {
-      if (current->index == WILD_SYMBOL.index)
-        totalCredits += count * 10 * 10;
-      else
-        totalCredits += count * current->prizeMultiplier * 10;
-    }
-  }
-
-  // -------------------- DIAGONAL ↘ --------------------
-  int countDiag1 = 1;
-  SlotSymbol *diag1 = &displayedSymbols[0];
-  for (int i = 1; i < SLOT_CELL_ROWS && i < SLOT_CELL_COLUMNS; i++) {
-    SlotSymbol *next = &displayedSymbols[i * SLOT_CELL_COLUMNS + i];
-    if (next->index == WILD_SYMBOL.index || diag1->index == WILD_SYMBOL.index ||
-        next->index == diag1->index) {
-      countDiag1++;
-      if (diag1->index == WILD_SYMBOL.index && next->index != WILD_SYMBOL.index)
-        diag1 = next;
-    } else
-      break;
-  }
-  if (countDiag1 >= 3) {
-    if (diag1->index == WILD_SYMBOL.index)
-      totalCredits += countDiag1 * 10 * 10;
-    else
-      totalCredits += countDiag1 * diag1->prizeMultiplier * 10;
-  }
-
-  // -------------------- DIAGONAL ↗ --------------------
-  int countDiag2 = 1;
-  SlotSymbol *diag2 =
-      &displayedSymbols[(SLOT_CELL_ROWS - 1) * SLOT_CELL_COLUMNS];
-  for (int i = 1; i < SLOT_CELL_ROWS && i < SLOT_CELL_COLUMNS; i++) {
-    SlotSymbol *next =
-        &displayedSymbols[(SLOT_CELL_ROWS - 1 - i) * SLOT_CELL_COLUMNS + i];
-    if (next->index == WILD_SYMBOL.index || diag2->index == WILD_SYMBOL.index ||
-        next->index == diag2->index) {
-      countDiag2++;
-      if (diag2->index == WILD_SYMBOL.index && next->index != WILD_SYMBOL.index)
-        diag2 = next;
-    } else
-      break;
-  }
-  if (countDiag2 >= 3) {
-    if (diag2->index == WILD_SYMBOL.index)
-      totalCredits += countDiag2 * 10 * 10;
-    else
-      totalCredits += countDiag2 * diag2->prizeMultiplier * 10;
-  }
-
-  // -------------------- SCATTER --------------------
-  int scatterCount = 0;
-  for (int i = 0; i < SLOT_CELL_ROWS * SLOT_CELL_COLUMNS; i++) {
-    if (displayedSymbols[i].index == SCATTER_SYMBOL.index)
-      scatterCount++;
-  }
-  if (scatterCount >= 3)
-    totalCredits += scatterCount * 50;
-
-  // -------------------- PAYOUT --------------------
-  TAO888_SlotMachine_PayoutCallback(totalCredits);
+// -------------------- HELPER --------------------
+static inline uint16_t scoreLine(SlotSymbol *symbol, int count) {
+    if (symbol->index == WILD_SYMBOL.index)
+        return count * 10 * 10; // all wilds
+    return count * symbol->prizeMultiplier * 10;
 }
+
+__weak void TAO888_SlotMachine_RoundEndCallback(SlotSymbol *displayedSymbols) {
+    uint16_t totalCredits = 0;
+    
+    // Column-Major: [Col0][Col1][Col2]...
+    // index = c * SLOT_CELL_ROWS + r
+    
+    // -------------------- DEBUG: display Slot --------------------
+    Serial_Debug_Printf("\r\n========== SLOT RESULT ==========\r\n");
+    Serial_Debug_Printf("\r\n");
+    
+    Serial_Debug_Printf("     |");
+    for (int c = 0; c < SLOT_CELL_COLUMNS; c++) {
+        Serial_Debug_Printf(" Col%-2d |", c);
+    }
+    Serial_Debug_Printf("\r\n");
+    
+    Serial_Debug_Printf("-----|");
+    for (int c = 0; c < SLOT_CELL_COLUMNS; c++) {
+        Serial_Debug_Printf("-------|");
+    }
+    Serial_Debug_Printf("\r\n");
+    
+    // each row (Column-Major indexing)
+    for (int r = 0; r < SLOT_CELL_ROWS; r++) {
+        Serial_Debug_Printf("Row%-2d|", r);
+        for (int c = 0; c < SLOT_CELL_COLUMNS; c++) {
+            int idx = c * SLOT_CELL_ROWS + r;  // Column-Major!
+            SlotSymbol *sym = &displayedSymbols[idx];
+            Serial_Debug_Printf("  %-4d |", sym->index);
+        }
+        Serial_Debug_Printf("\r\n");
+    }
+    Serial_Debug_Printf("\r\n\r\n");
+
+    // -------------------- HORIZONTAL PAYLINES (Left-to-Right) --------------------
+    Serial_Debug_Printf("--- Checking HORIZONTAL Paylines ---\r\n");
+    for (int r = 0; r < SLOT_CELL_ROWS; r++) {
+        int count = 1;
+        SlotSymbol *matchSymbol = &displayedSymbols[r];  // Column 0, Row r
+        
+        // display symbols in this row
+        Serial_Debug_Printf("Row %d: [", r);
+        for (int c = 0; c < SLOT_CELL_COLUMNS; c++) {
+            if (c > 0) Serial_Debug_Printf(", ");
+            Serial_Debug_Printf("%d", displayedSymbols[c * SLOT_CELL_ROWS + r].index);
+        }
+        Serial_Debug_Printf("] -> ");
+        
+        // if first position is Wild, find first non-Wild symbol
+        if (matchSymbol->index == WILD_SYMBOL.index) {
+            for (int c = 1; c < SLOT_CELL_COLUMNS; c++) {
+                SlotSymbol *candidate = &displayedSymbols[c * SLOT_CELL_ROWS + r];
+                if (candidate->index != WILD_SYMBOL.index) {
+                    matchSymbol = candidate;
+                    break;
+                }
+            }
+        }
+
+        // check each position from left to right
+        for (int c = 1; c < SLOT_CELL_COLUMNS; c++) {
+            SlotSymbol *next = &displayedSymbols[c * SLOT_CELL_ROWS + r];
+            if (next->index == WILD_SYMBOL.index || next->index == matchSymbol->index) {
+                count++;
+            } else {
+                break;
+            }
+        }
+        
+        if (count >= 3) {
+            uint16_t lineScore = scoreLine(matchSymbol, count);
+            totalCredits += lineScore;
+            Serial_Debug_Printf("✓ Matched %d symbols (idx=%d) => +%d credits\r\n",
+                                count, matchSymbol->index, lineScore);
+        } else {
+            Serial_Debug_Printf("✗ Only %d symbols (need 3+)\r\n", count);
+        }
+    }
+    Serial_Debug_Printf("\r\n");
+
+    // -------------------- VERTICAL PAYLINES (Top-to-Bottom) --------------------
+    Serial_Debug_Printf("--- Checking VERTICAL Paylines ---\r\n");
+    for (int c = 0; c < SLOT_CELL_COLUMNS; c++) {
+        int count = 1;
+        SlotSymbol *matchSymbol = &displayedSymbols[c * SLOT_CELL_ROWS];  // Column c, Row 0
+        
+        // display symbols in this column
+        Serial_Debug_Printf("Col %d: [", c);
+        for (int r = 0; r < SLOT_CELL_ROWS; r++) {
+            if (r > 0) Serial_Debug_Printf(", ");
+            Serial_Debug_Printf("%d", displayedSymbols[c * SLOT_CELL_ROWS + r].index);
+        }
+        Serial_Debug_Printf("] -> ");
+        
+        // if first position is Wild, find first non-Wild symbol
+        if (matchSymbol->index == WILD_SYMBOL.index) {
+            for (int r = 1; r < SLOT_CELL_ROWS; r++) {
+                SlotSymbol *candidate = &displayedSymbols[c * SLOT_CELL_ROWS + r];
+                if (candidate->index != WILD_SYMBOL.index) {
+                    matchSymbol = candidate;
+                    break;
+                }
+            }
+        }
+
+        // check each position from top to bottom
+        for (int r = 1; r < SLOT_CELL_ROWS; r++) {
+            SlotSymbol *next = &displayedSymbols[c * SLOT_CELL_ROWS + r];
+            if (next->index == WILD_SYMBOL.index || next->index == matchSymbol->index) {
+                count++;
+            } else {
+                break;
+            }
+        }
+        
+        if (count >= 3) {
+            uint16_t lineScore = scoreLine(matchSymbol, count);
+            totalCredits += lineScore;
+            Serial_Debug_Printf("✓ Matched %d symbols (idx=%d) => +%d credits\r\n",
+                                 count, matchSymbol->index, lineScore);
+        } else {
+            Serial_Debug_Printf("✗ Only %d symbols (need 3+)\r\n", count);
+        }
+    }
+    Serial_Debug_Printf("\r\n");
+
+    // -------------------- DOWN DIAGONAL (Top-Left to Bottom-Right) --------------------
+    Serial_Debug_Printf("--- Checking DOWN DIAGONAL ---\r\n");
+    int minDim = (SLOT_CELL_ROWS < SLOT_CELL_COLUMNS) ? SLOT_CELL_ROWS : SLOT_CELL_COLUMNS;
+    int countDiag1 = 1;
+    SlotSymbol *diag1 = &displayedSymbols[0];  // (0,0)
+    
+    Serial_Debug_Printf("Down Diag: [");
+    for (int i = 0; i < minDim; i++) {
+        if (i > 0) Serial_Debug_Printf(", ");
+        Serial_Debug_Printf("%d", displayedSymbols[i * SLOT_CELL_ROWS + i].index);
+    }
+    Serial_Debug_Printf("] -> ");
+    
+    if (diag1->index == WILD_SYMBOL.index) {
+        for (int i = 1; i < minDim; i++) {
+            SlotSymbol *candidate = &displayedSymbols[i * SLOT_CELL_ROWS + i];
+            if (candidate->index != WILD_SYMBOL.index) {
+                diag1 = candidate;
+                break;
+            }
+        }
+    }
+    
+    for (int i = 1; i < minDim; i++) {
+        SlotSymbol *next = &displayedSymbols[i * SLOT_CELL_ROWS + i];
+        if (next->index == WILD_SYMBOL.index || next->index == diag1->index) {
+            countDiag1++;
+        } else {
+            break;
+        }
+    }
+    
+    if (countDiag1 >= 3) {
+        uint16_t lineScore = scoreLine(diag1, countDiag1);
+        totalCredits += lineScore;
+        Serial_Debug_Printf("✓ Matched %d symbols (idx=%d) => +%d credits\r\n",
+                             countDiag1, diag1->index, lineScore);
+    } else {
+        Serial_Debug_Printf("✗ Only %d symbols (need 3+)\r\n", countDiag1);
+    }
+
+    // -------------------- UP DIAGONAL (Bottom-Left to Top-Right) --------------------
+    Serial_Debug_Printf("--- Checking UP DIAGONAL ---\r\n");
+    int countDiag2 = 1;
+    SlotSymbol *diag2 = &displayedSymbols[SLOT_CELL_ROWS - 1];  // (0, ROWS-1)
+    
+    Serial_Debug_Printf("Up Diag : [");
+    for (int i = 0; i < minDim; i++) {
+        if (i > 0) Serial_Debug_Printf(", ");
+        Serial_Debug_Printf("%d", displayedSymbols[i * SLOT_CELL_ROWS + (SLOT_CELL_ROWS - 1 - i)].index);
+    }
+    Serial_Debug_Printf("] -> ");
+    
+    if (diag2->index == WILD_SYMBOL.index) {
+        for (int i = 1; i < minDim; i++) {
+            SlotSymbol *candidate = &displayedSymbols[i * SLOT_CELL_ROWS + (SLOT_CELL_ROWS - 1 - i)];
+            if (candidate->index != WILD_SYMBOL.index) {
+                diag2 = candidate;
+                break;
+            }
+        }
+    }
+    
+    for (int i = 1; i < minDim; i++) {
+        SlotSymbol *next = &displayedSymbols[i * SLOT_CELL_ROWS + (SLOT_CELL_ROWS - 1 - i)];
+        if (next->index == WILD_SYMBOL.index || next->index == diag2->index) {
+            countDiag2++;
+        } else {
+            break;
+        }
+    }
+    
+    if (countDiag2 >= 3) {
+        uint16_t lineScore = scoreLine(diag2, countDiag2);
+        totalCredits += lineScore;
+        Serial_Debug_Printf("✓ Matched %d symbols (idx=%d) => +%d credits\r\n",
+                             countDiag2, diag2->index, lineScore);
+    } else {
+        Serial_Debug_Printf("✗ Only %d symbols (need 3+)\r\n", countDiag2);
+    }
+    Serial_Debug_Printf("\r\n");
+
+    // -------------------- SCATTER BONUS --------------------
+    Serial_Debug_Printf("--- Checking SCATTER ---\r\n");
+    int scatterCount = 0;
+    Serial_Debug_Printf("Scatter positions: ");
+    for (int i = 0; i < SLOT_CELL_ROWS * SLOT_CELL_COLUMNS; i++) {
+        if (displayedSymbols[i].index == SCATTER_SYMBOL.index) {
+            scatterCount++;
+            // change to (row, col)
+            int col = i / SLOT_CELL_ROWS;
+            int row = i % SLOT_CELL_ROWS;
+            Serial_Debug_Printf("(R%d,C%d) ", row, col);
+        }
+    }
+    
+    if (scatterCount >= 3) {
+        uint16_t scatterScore = scatterCount * 50;
+        totalCredits += scatterScore;
+        Serial_Debug_Printf("-> ✓ %d scatters => +%d credits\r\n", scatterCount, scatterScore);
+    } else {
+        Serial_Debug_Printf("-> ✗ Only %d scatters (need 3+)\r\n", scatterCount);
+    }
+
+    // -------------------- FINAL PAYOUT --------------------
+    Serial_Debug_Printf("\r\n========== PAYOUT ==========\r\n");
+    Serial_Debug_Printf("TOTAL Credits: %d\r\n", totalCredits);
+    Serial_Debug_Printf("============================\r\n\r\n");
+    TAO888_SlotMachine_PayoutCallback(totalCredits);
+  }
 
 __weak void TAO888_SlotMachine_PayoutCallback(uint16_t credits) {
   Serial_Debug_Printf("\r\nPaying out: %d credits\r\n", credits);
