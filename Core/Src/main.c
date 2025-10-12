@@ -18,7 +18,6 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "stm32f7xx_hal_uart.h"
 #include "string.h"
 
 /* Private includes ----------------------------------------------------------*/
@@ -96,6 +95,7 @@ PCD_HandleTypeDef hpcd_USB_OTG_FS;
 
 volatile bool spi5Transferable = true;
 
+uint8_t coinUartBuffer;
 
 /* USER CODE END PV */
 
@@ -162,6 +162,9 @@ int main(void)
 
   HAL_TIM_Base_Init(&htim2);
   HAL_TIM_Base_Stop_IT(&htim2);
+
+  // HAL_UART_Receive_IT(&AUX_COIN_UART_HANDLE, &coinUartBuffer, sizeof(coinUartBuffer));
+  HAL_UART_Receive_IT(&AUX_COIN_UART_HANDLE, &coinUartBuffer, sizeof(coinUartBuffer));
 
   ILI9341_HandleTypeDef lcd =
       ILI9341_Init(&hspi5, LCD_CS_GPIO_Port, LCD_CS_Pin, LCD_DC_GPIO_Port,
@@ -663,7 +666,13 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
   if (huart == &AUX_COIN_UART_HANDLE) {
-    TAO888_SlotMachine_IncrementCredits(1);
+    Serial_Debug_Printf("coinUartBuffer = %x\r\n", coinUartBuffer);
+    if (coinUartBuffer == COIN_COMMAND_ADD_COIN) {
+      TAO888_SlotMachine_IncrementCredits(10);
+    }
+    HAL_UART_Receive_IT(&AUX_COIN_UART_HANDLE, &coinUartBuffer, sizeof(coinUartBuffer));
+  } else if (huart == &huart3) {
+    TAO888_SlotMachine_IncrementCredits(10);
   }
 }
 

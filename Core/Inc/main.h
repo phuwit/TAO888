@@ -22,7 +22,6 @@
 #ifndef __MAIN_H
 #define __MAIN_H
 
-#include "stm32f7xx_hal_uart.h"
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -38,8 +37,8 @@ extern "C" {
 /* Exported types ------------------------------------------------------------*/
 /* USER CODE BEGIN ET */
 
-#define AUX_COIN_UART_HANDLE huart7
-#define AUX_MUSIC_UART_HANDLE huart8
+#define AUX_COIN_UART_HANDLE huart4
+#define AUX_MUSIC_UART_HANDLE huart5
 
 extern RNG_HandleTypeDef hrng;
 extern UART_HandleTypeDef AUX_COIN_UART_HANDLE;
@@ -141,7 +140,7 @@ void Error_Handler(void);
 #define BANNER_SIZE 48
 #define BANNER_WIN_TEXT "YOU WIN!!"
 #define BANNER_LOSE_TEXT "you lose :("
-#define BANNER_CREDITS_PATTERN "%u Credits"
+#define BANNER_CREDITS_PATTERN "%lu Credits"
 
 #define SLOT_CELL_COLUMNS 5
 #define SLOT_CELL_ROWS 3
@@ -154,6 +153,8 @@ void Error_Handler(void);
 #define AUX_UART_TIMEOUT 200
 // #define AUX_COIN_UART_HANDLE huart7
 // #define AUX_MUSIC_UART_HANDLE huart8
+
+#define COIN_COMMAND_ADD_COIN 0x69
 
 #define MUSIC_COMMAND_STOP        0x00
 #define MUSIC_COMMAND_MUSIC_IDLE  0x01

@@ -6,6 +6,9 @@
 #include <string.h>
 #include <sys/types.h>
 
+
+char bannerCreditsBuffer[24] = "\0";
+
 void TAO888_Banner_Draw(Banner* banner, ILI9341_HandleTypeDef* lcd) {
   ILI9341_FillRectangle(lcd, 0, 0, LCD_WIDTH, BANNER_SIZE, ILI9341_COLOR_WHITE);
 
@@ -21,13 +24,12 @@ void TAO888_Banner_Draw(Banner* banner, ILI9341_HandleTypeDef* lcd) {
 }
 
 void TAO888_Banner_UpdateCredits(Banner* banner, const uint32_t credits) {
-  static const uint8_t amountIndex = 1;
-  char bannerCreditsBuffer[24] = "\0";
+  static const uint8_t amountIndex = 2;
   const char creditsTextLength = (credits / 10) + 1;
 
   sprintf(bannerCreditsBuffer, BANNER_CREDITS_PATTERN, credits);
-  strcpy(banner->bannerTexts[amountIndex].str, bannerCreditsBuffer);
-  banner->bannerTexts[amountIndex].posX = LCD_WIDTH - 12 - (creditsTextLength * 10);
+  banner->bannerTexts[amountIndex].str = bannerCreditsBuffer;
+  banner->bannerTexts[amountIndex].posX = LCD_WIDTH - 12 - (creditsTextLength * 10) - ((strlen(BANNER_CREDITS_PATTERN) - 2) * 10);
 }
 
 void TAO888_Banner_UpdateWinStatus(Banner* banner, bool win) {

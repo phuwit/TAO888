@@ -18,9 +18,9 @@ extern TIM_HandleTypeDef NS_TIMER;
 BannerText bannerTexts[] = {
     {12, 12, "TAO888", &ILI9341_Font_Terminus12x24b, ILI9341_COLOR_BLACK,
      ILI9341_COLOR_WHITE, 0},
-    {LCD_WIDTH - 80 - 12, 6, "YOU WIN!", &ILI9341_Font_Terminus10x18b,
+    {LCD_WIDTH - 110 - 12, 6, "    Welcome", &ILI9341_Font_Terminus10x18b,
      ILI9341_COLOR_BLACK, ILI9341_COLOR_WHITE, 0},
-    {LCD_WIDTH - 90 - 12, 24, "24 Tokens", &ILI9341_Font_Terminus10x18,
+    {LCD_WIDTH - 90 - 12, 24, "0 Credits", &ILI9341_Font_Terminus10x18,
      ILI9341_COLOR_BLACK, ILI9341_COLOR_WHITE, 0}};
 Banner banner = {bannerTexts, sizeof(bannerTexts) / sizeof(bannerTexts[0])};
 
@@ -449,9 +449,13 @@ void TAO888_SlotMachine_GetDisplayedSymbols(SlotSymbol *symbolReciever) {
 }
 
 void TAO888_SlotMachine_IncrementCredits(uint8_t amount) {
+  Serial_Debug_Printf("adding credits\r\n");
+
   credits += amount;
   TAO888_Banner_UpdateCredits(&banner, credits);
   bannerUpdated = true;
+  Serial_Debug_Printf("credits = %u\r\n", credits);
+
 }
 
 void TAO888_SlotMachine_SendCommandToAux(UART_HandleTypeDef* AuxUart, const uint8_t command) {
