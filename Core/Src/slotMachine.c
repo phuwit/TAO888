@@ -41,6 +41,8 @@ volatile bool stateTimerSet = false;
 volatile bool bannerUpdated = false;
 
 void TAO888_SlotMachine_Init(ILI9341_HandleTypeDef *lcd) {
+  TAO888_SlotMachine_SendCommandToAux(&AUX_MUSIC_UART_HANDLE, MUSIC_COMMAND_MUSIC_IDLE);
+
   for (int i = 0; i < SLOT_SYMBOLS_LENGTH; i += 1) {
     if (i == 0) {
       slotSymbolsRandomLowerBound[0] = 0;
@@ -151,6 +153,8 @@ void TAO888_SlotMachine_StartCycle() {
     currentState = SHUFFLE;
     bannerUpdated = true;
     TAO888_Banner_UpdateCredits(&banner, credits);
+    TAO888_SlotMachine_SendCommandToAux(&AUX_MUSIC_UART_HANDLE, MUSIC_COMMAND_MUSIC_SPIN);
+    TAO888_SlotMachine_SendCommandToAux(&huart3, 'A');
   } else {
     Serial_Debug_Printf("cannot start cycle\r\n");
   }
@@ -172,6 +176,9 @@ void TAO888_SlotMachine_IncrementState() {
   if (currentState >= (sizeof(stateConfig) / sizeof(stateConfig[0]))) {
     currentState = 0;
     TAO888_SlotCols_Offset(slotCols);
+  }
+  if (currentState == WAITING) {
+    TAO888_SlotMachine_SendCommandToAux(&AUX_MUSIC_UART_HANDLE, MUSIC_COMMAND_MUSIC_IDLE);
   }
   stateTimerSet = false;
   Serial_Debug_Printf(" -> %d\r\n", currentState);
@@ -419,6 +426,7 @@ __weak void TAO888_SlotMachine_RoundEndCallback(SlotSymbol *displayedSymbols) {
     Serial_Debug_Printf("TOTAL Credits: %d\r\n", totalCredits);
     Serial_Debug_Printf("============================\r\n\r\n");
     TAO888_SlotMachine_PayoutCallback(totalCredits);
+    TAO888_SlotMachine_SendCommandToAux(&AUX_MUSIC_UART_HANDLE, MUSIC_COMMAND_MUSIC_WIN);
   }
 
 __weak void TAO888_SlotMachine_PayoutCallback(uint16_t coinAmount) {
@@ -459,5 +467,6 @@ void TAO888_SlotMachine_IncrementCredits(uint8_t amount) {
 }
 
 void TAO888_SlotMachine_SendCommandToAux(UART_HandleTypeDef* AuxUart, const uint8_t command) {
+  Serial_Debug_Printf("sending command to aux: %x\r\n", command);
   HAL_UART_Transmit(AuxUart, &command, sizeof(command), AUX_UART_TIMEOUT);
 }

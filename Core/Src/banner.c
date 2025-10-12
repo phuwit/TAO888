@@ -25,7 +25,7 @@ void TAO888_Banner_Draw(Banner* banner, ILI9341_HandleTypeDef* lcd) {
 
 void TAO888_Banner_UpdateCredits(Banner* banner, const uint32_t credits) {
   static const uint8_t amountIndex = 2;
-  const char creditsTextLength = (credits / 10) + 1;
+  const char creditsTextLength = (credits == 0 ? 1 : (int)(log10(credits)+1));
 
   sprintf(bannerCreditsBuffer, BANNER_CREDITS_PATTERN, credits);
   banner->bannerTexts[amountIndex].str = bannerCreditsBuffer;
