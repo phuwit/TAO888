@@ -7,12 +7,13 @@
 #include "stm32f7xx_hal.h"
 #include "stm32f7xx_hal_rng.h"
 #include "stm32f7xx_hal_tim.h"
+#include "stm32f7xx_hal_uart.h"
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdio.h>
+#include <string.h>
 
 extern TIM_HandleTypeDef NS_TIMER;
-
-
 
 BannerText bannerTexts[] = {
     {12, 12, "TAO888", &ILI9341_Font_Terminus12x24b, ILI9341_COLOR_BLACK,
@@ -31,9 +32,13 @@ uint32_t lastUpdate;
 SlotCol slotCols[SLOT_CELL_COLUMNS];
 SlotSymbol symbolReciever[SLOT_CELL_COLUMNS * SLOT_CELL_ROWS];
 
+uint8_t payoutCredits = 0;
+
+volatile uint32_t credits = 0;
 volatile State currentState = WAITING;
 volatile bool startAdvancingState = false;
 volatile bool stateTimerSet = false;
+volatile bool bannerUpdated = false;
 
 void TAO888_SlotMachine_Init(ILI9341_HandleTypeDef *lcd) {
   for (int i = 0; i < SLOT_SYMBOLS_LENGTH; i += 1) {
@@ -87,6 +92,11 @@ void TAO888_SlotMachine_Update(ILI9341_HandleTypeDef *lcd) {
   }
   lastUpdate = HAL_GetTick();
 
+  if (bannerUpdated) {
+    bannerUpdated = false;
+    TAO888_Banner_Draw(&banner, lcd);
+  }
+
   if (stateConfig[currentState].scrollAmount != 0) {
     uint8_t indexStart = stateConfig[currentState].scrollRowStartIndex;
     if (startAdvancingState) {
@@ -135,9 +145,15 @@ void TAO888_SlotMachine_Update(ILI9341_HandleTypeDef *lcd) {
 }
 
 void TAO888_SlotMachine_StartCycle() {
-  Serial_Debug_Printf("starting cycle\r\n");
-  if (currentState == WAITING || currentState == RESULT)
+  if ((currentState == WAITING || currentState == RESULT) && (credits > 0)) {
+    Serial_Debug_Printf("starting cycle\r\n");
+    credits -= 1;
     currentState = SHUFFLE;
+    bannerUpdated = true;
+    TAO888_Banner_UpdateCredits(&banner, credits);
+  } else {
+    Serial_Debug_Printf("cannot start cycle\r\n");
+  }
 }
 
 void TAO888_SlotMachine_AdvanceStateGracefully() {
@@ -406,7 +422,9 @@ __weak void TAO888_SlotMachine_RoundEndCallback(SlotSymbol *displayedSymbols) {
   }
 
 __weak void TAO888_SlotMachine_PayoutCallback(uint16_t credits) {
-  Serial_Debug_Printf("\r\nPaying out: %d credits\r\n", credits);
+  payoutCredits = credits;
+  Serial_Debug_Printf("\r\nPaying out: %d credits\r\n", payoutCredits);
+  TAO888_SlotMachine_SendCommandToAux(&AUX_COIN_UART_HANDLE, payoutCredits);
 }
 
 SlotSymbol TAO888_SlotMachine_GetRandomSymbol() {
@@ -428,4 +446,14 @@ void TAO888_SlotMachine_GetDisplayedSymbols(SlotSymbol *symbolReciever) {
           TAO888_SlotColQueue_ReadIndex(&slotCols[col], row + 1);
     }
   }
+}
+
+void TAO888_SlotMachine_IncrementCredits(uint8_t amount) {
+  credits += amount;
+  TAO888_Banner_UpdateCredits(&banner, credits);
+  bannerUpdated = true;
+}
+
+void TAO888_SlotMachine_SendCommandToAux(UART_HandleTypeDef* AuxUart, const uint8_t command) {
+  HAL_UART_Transmit(AuxUart, &command, sizeof(command), AUX_UART_TIMEOUT);
 }

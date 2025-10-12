@@ -62,5 +62,7 @@ __weak void TAO888_SlotMachine_RoundEndCallback(SlotSymbol* displayedSymbols);
 __weak void TAO888_SlotMachine_PayoutCallback(uint16_t credits);
 SlotSymbol TAO888_SlotMachine_GetRandomSymbol();
 void TAO888_SlotMachine_GetDisplayedSymbols(SlotSymbol* symbolReciever);
+void TAO888_SlotMachine_IncrementCredits(uint8_t amount);
+void TAO888_SlotMachine_SendCommandToAux(UART_HandleTypeDef* AuxUart, const uint8_t command);
 
 #endif

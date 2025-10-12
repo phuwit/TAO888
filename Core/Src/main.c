@@ -18,6 +18,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "stm32f7xx_hal_uart.h"
 #include "string.h"
 
 /* Private includes ----------------------------------------------------------*/
@@ -657,6 +658,12 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
   } else if (GPIO_Pin == GPIO_PIN_13) {
     // Serial_Debug_Println("Received interrupt from B1");
     TAO888_SlotMachine_StartCycle();
+  }
+}
+
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
+  if (huart == &AUX_COIN_UART_HANDLE) {
+    TAO888_SlotMachine_IncrementCredits(1);
   }
 }
 
