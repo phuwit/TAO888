@@ -137,7 +137,7 @@ void TAO888_SlotMachine_Update(ILI9341_HandleTypeDef *lcd) {
 void TAO888_SlotMachine_StartCycle() {
   Serial_Debug_Printf("starting cycle\r\n");
   if (currentState == WAITING || currentState == RESULT)
-    TAO888_SlotMachine_IncrementState();
+    currentState = SHUFFLE;
 }
 
 void TAO888_SlotMachine_AdvanceStateGracefully() {
@@ -170,26 +170,26 @@ static inline uint16_t scoreLine(SlotSymbol *symbol, int count) {
 
 __weak void TAO888_SlotMachine_RoundEndCallback(SlotSymbol *displayedSymbols) {
     uint16_t totalCredits = 0;
-    
+
     // Column-Major: [Col0][Col1][Col2]...
     // index = c * SLOT_CELL_ROWS + r
-    
+
     // -------------------- DEBUG: display Slot --------------------
     Serial_Debug_Printf("\r\n========== SLOT RESULT ==========\r\n");
     Serial_Debug_Printf("\r\n");
-    
+
     Serial_Debug_Printf("     |");
     for (int c = 0; c < SLOT_CELL_COLUMNS; c++) {
         Serial_Debug_Printf(" Col%-2d |", c);
     }
     Serial_Debug_Printf("\r\n");
-    
+
     Serial_Debug_Printf("-----|");
     for (int c = 0; c < SLOT_CELL_COLUMNS; c++) {
         Serial_Debug_Printf("-------|");
     }
     Serial_Debug_Printf("\r\n");
-    
+
     // each row (Column-Major indexing)
     for (int r = 0; r < SLOT_CELL_ROWS; r++) {
         Serial_Debug_Printf("Row%-2d|", r);
@@ -207,7 +207,7 @@ __weak void TAO888_SlotMachine_RoundEndCallback(SlotSymbol *displayedSymbols) {
     for (int r = 0; r < SLOT_CELL_ROWS; r++) {
         int count = 1;
         SlotSymbol *matchSymbol = &displayedSymbols[r];  // Column 0, Row r
-        
+
         // display symbols in this row
         Serial_Debug_Printf("Row %d: [", r);
         for (int c = 0; c < SLOT_CELL_COLUMNS; c++) {
@@ -215,7 +215,7 @@ __weak void TAO888_SlotMachine_RoundEndCallback(SlotSymbol *displayedSymbols) {
             Serial_Debug_Printf("%d", displayedSymbols[c * SLOT_CELL_ROWS + r].index);
         }
         Serial_Debug_Printf("] -> ");
-        
+
         // if first position is Wild, find first non-Wild symbol
         if (matchSymbol->index == WILD_SYMBOL.index) {
             for (int c = 1; c < SLOT_CELL_COLUMNS; c++) {
@@ -236,7 +236,7 @@ __weak void TAO888_SlotMachine_RoundEndCallback(SlotSymbol *displayedSymbols) {
                 break;
             }
         }
-        
+
         if (count >= 3) {
             uint16_t lineScore = scoreLine(matchSymbol, count);
             totalCredits += lineScore;
@@ -253,7 +253,7 @@ __weak void TAO888_SlotMachine_RoundEndCallback(SlotSymbol *displayedSymbols) {
     for (int c = 0; c < SLOT_CELL_COLUMNS; c++) {
         int count = 1;
         SlotSymbol *matchSymbol = &displayedSymbols[c * SLOT_CELL_ROWS];  // Column c, Row 0
-        
+
         // display symbols in this column
         Serial_Debug_Printf("Col %d: [", c);
         for (int r = 0; r < SLOT_CELL_ROWS; r++) {
@@ -261,7 +261,7 @@ __weak void TAO888_SlotMachine_RoundEndCallback(SlotSymbol *displayedSymbols) {
             Serial_Debug_Printf("%d", displayedSymbols[c * SLOT_CELL_ROWS + r].index);
         }
         Serial_Debug_Printf("] -> ");
-        
+
         // if first position is Wild, find first non-Wild symbol
         if (matchSymbol->index == WILD_SYMBOL.index) {
             for (int r = 1; r < SLOT_CELL_ROWS; r++) {
@@ -282,7 +282,7 @@ __weak void TAO888_SlotMachine_RoundEndCallback(SlotSymbol *displayedSymbols) {
                 break;
             }
         }
-        
+
         if (count >= 3) {
             uint16_t lineScore = scoreLine(matchSymbol, count);
             totalCredits += lineScore;
@@ -299,14 +299,14 @@ __weak void TAO888_SlotMachine_RoundEndCallback(SlotSymbol *displayedSymbols) {
     int minDim = (SLOT_CELL_ROWS < SLOT_CELL_COLUMNS) ? SLOT_CELL_ROWS : SLOT_CELL_COLUMNS;
     int countDiag1 = 1;
     SlotSymbol *diag1 = &displayedSymbols[0];  // (0,0)
-    
+
     Serial_Debug_Printf("Down Diag: [");
     for (int i = 0; i < minDim; i++) {
         if (i > 0) Serial_Debug_Printf(", ");
         Serial_Debug_Printf("%d", displayedSymbols[i * SLOT_CELL_ROWS + i].index);
     }
     Serial_Debug_Printf("] -> ");
-    
+
     if (diag1->index == WILD_SYMBOL.index) {
         for (int i = 1; i < minDim; i++) {
             SlotSymbol *candidate = &displayedSymbols[i * SLOT_CELL_ROWS + i];
@@ -316,7 +316,7 @@ __weak void TAO888_SlotMachine_RoundEndCallback(SlotSymbol *displayedSymbols) {
             }
         }
     }
-    
+
     for (int i = 1; i < minDim; i++) {
         SlotSymbol *next = &displayedSymbols[i * SLOT_CELL_ROWS + i];
         if (next->index == WILD_SYMBOL.index || next->index == diag1->index) {
@@ -325,7 +325,7 @@ __weak void TAO888_SlotMachine_RoundEndCallback(SlotSymbol *displayedSymbols) {
             break;
         }
     }
-    
+
     if (countDiag1 >= 3) {
         uint16_t lineScore = scoreLine(diag1, countDiag1);
         totalCredits += lineScore;
@@ -339,14 +339,14 @@ __weak void TAO888_SlotMachine_RoundEndCallback(SlotSymbol *displayedSymbols) {
     Serial_Debug_Printf("--- Checking UP DIAGONAL ---\r\n");
     int countDiag2 = 1;
     SlotSymbol *diag2 = &displayedSymbols[SLOT_CELL_ROWS - 1];  // (0, ROWS-1)
-    
+
     Serial_Debug_Printf("Up Diag : [");
     for (int i = 0; i < minDim; i++) {
         if (i > 0) Serial_Debug_Printf(", ");
         Serial_Debug_Printf("%d", displayedSymbols[i * SLOT_CELL_ROWS + (SLOT_CELL_ROWS - 1 - i)].index);
     }
     Serial_Debug_Printf("] -> ");
-    
+
     if (diag2->index == WILD_SYMBOL.index) {
         for (int i = 1; i < minDim; i++) {
             SlotSymbol *candidate = &displayedSymbols[i * SLOT_CELL_ROWS + (SLOT_CELL_ROWS - 1 - i)];
@@ -356,7 +356,7 @@ __weak void TAO888_SlotMachine_RoundEndCallback(SlotSymbol *displayedSymbols) {
             }
         }
     }
-    
+
     for (int i = 1; i < minDim; i++) {
         SlotSymbol *next = &displayedSymbols[i * SLOT_CELL_ROWS + (SLOT_CELL_ROWS - 1 - i)];
         if (next->index == WILD_SYMBOL.index || next->index == diag2->index) {
@@ -365,7 +365,7 @@ __weak void TAO888_SlotMachine_RoundEndCallback(SlotSymbol *displayedSymbols) {
             break;
         }
     }
-    
+
     if (countDiag2 >= 3) {
         uint16_t lineScore = scoreLine(diag2, countDiag2);
         totalCredits += lineScore;
@@ -389,7 +389,7 @@ __weak void TAO888_SlotMachine_RoundEndCallback(SlotSymbol *displayedSymbols) {
             Serial_Debug_Printf("(R%d,C%d) ", row, col);
         }
     }
-    
+
     if (scatterCount >= 3) {
         uint16_t scatterScore = scatterCount * 50;
         totalCredits += scatterScore;
