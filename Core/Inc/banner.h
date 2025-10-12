@@ -22,5 +22,7 @@ typedef struct {
 
 // void TAO888_Banner_Init(Banner* banner);
 void TAO888_Banner_Draw(Banner* banner, ILI9341_HandleTypeDef* lcd);
+void TAO888_Banner_UpdateCredits(Banner* banner, const uint32_t credits);
+void TAO888_Banner_UpdateWinStatus(Banner* banner, bool win);
 
 #endif
