@@ -40,6 +40,10 @@ volatile bool startAdvancingState = false;
 volatile bool stateTimerSet = false;
 volatile bool bannerUpdated = false;
 
+bool winLose = false;
+
+uint8_t multiCredits = 10;
+
 void TAO888_SlotMachine_Init(ILI9341_HandleTypeDef *lcd) {
   TAO888_SlotMachine_SendCommandToAux(&AUX_MUSIC_UART_HANDLE, MUSIC_COMMAND_MUSIC_IDLE);
 
@@ -187,8 +191,8 @@ void TAO888_SlotMachine_IncrementState() {
 // -------------------- HELPER --------------------
 static inline uint16_t scoreLine(SlotSymbol *symbol, int count) {
     if (symbol->index == WILD_SYMBOL.index)
-        return count * 10 * 10; // all wilds
-    return count * symbol->prizeMultiplier * 10;
+        return count * 10 * multiCredits; // all wilds
+    return count * symbol->prizeMultiplier * multiCredits;
 }
 
 // check a custom payline defined by path
@@ -234,6 +238,7 @@ static uint16_t checkCustomPayline(SlotSymbol *displayedSymbols, const int path[
         uint16_t lineScore = scoreLine(matchSymbol, count);
         Serial_Debug_Printf("✓ Matched %d symbols (idx=%d) => +%d credits\r\n",
                              count, matchSymbol->index, lineScore);
+        winLose = true;
         return lineScore;
     } else {
         Serial_Debug_Printf("✗ Only %d symbols (need 3+)\r\n", count);
@@ -311,10 +316,11 @@ __weak void TAO888_SlotMachine_RoundEndCallback(SlotSymbol *displayedSymbols) {
         }
 
         if (count >= 3) {
-            uint16_t lineScore = scoreLine(matchSymbol, count);
-            totalCredits += lineScore;
-            Serial_Debug_Printf("✓ Matched %d symbols (idx=%d) => +%d credits\r\n",
+          uint16_t lineScore = scoreLine(matchSymbol, count);
+          totalCredits += lineScore;
+          Serial_Debug_Printf("✓ Matched %d symbols (idx=%d) => +%d credits\r\n",
                                 count, matchSymbol->index, lineScore);
+          winLose = true;
         } else {
             Serial_Debug_Printf("✗ Only %d symbols (need 3+)\r\n", count);
         }
@@ -357,10 +363,12 @@ __weak void TAO888_SlotMachine_RoundEndCallback(SlotSymbol *displayedSymbols) {
         }
 
         if (count >= 3) {
+
             uint16_t lineScore = scoreLine(matchSymbol, count);
             totalCredits += lineScore;
             Serial_Debug_Printf("✓ Matched %d symbols (idx=%d) => +%d credits\r\n",
                                  count, matchSymbol->index, lineScore);
+            winLose = true;
         } else {
             Serial_Debug_Printf("✗ Only %d symbols (need 3+)\r\n", count);
         }
@@ -404,6 +412,7 @@ __weak void TAO888_SlotMachine_RoundEndCallback(SlotSymbol *displayedSymbols) {
         totalCredits += lineScore;
         Serial_Debug_Printf("✓ Matched %d symbols (idx=%d) => +%d credits\r\n",
                              countDiag1, diag1->index, lineScore);
+        winLose = true;
     } else {
         Serial_Debug_Printf("✗ Only %d symbols (need 3+)\r\n", countDiag1);
     }
@@ -444,6 +453,7 @@ __weak void TAO888_SlotMachine_RoundEndCallback(SlotSymbol *displayedSymbols) {
         totalCredits += lineScore;
         Serial_Debug_Printf("✓ Matched %d symbols (idx=%d) => +%d credits\r\n",
                              countDiag2, diag2->index, lineScore);
+        winLose = true;
     } else {
         Serial_Debug_Printf("✗ Only %d symbols (need 3+)\r\n", countDiag2);
     }
@@ -528,11 +538,20 @@ __weak void TAO888_SlotMachine_RoundEndCallback(SlotSymbol *displayedSymbols) {
         uint16_t scatterScore = scatterCount * 50;
         totalCredits += scatterScore;
         Serial_Debug_Printf("-> ✓ %d scatters => +%d credits\r\n", scatterCount, scatterScore);
+        winLose = true;
     } else {
         Serial_Debug_Printf("-> ✗ Only %d scatters (need 3+)\r\n", scatterCount);
     }
 
     // -------------------- FINAL PAYOUT --------------------
+    if (winLose) {
+        TAO888_Banner_UpdateWinStatus(&banner, true);
+        bannerUpdated = true;
+    } else {
+        TAO888_Banner_UpdateWinStatus(&banner, false);
+        bannerUpdated = true;
+    }
+
     Serial_Debug_Printf("\r\n========== PAYOUT ==========\r\n");
     Serial_Debug_Printf("TOTAL Credits: %d\r\n", totalCredits);
     Serial_Debug_Printf("============================\r\n\r\n");
