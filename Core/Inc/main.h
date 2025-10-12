@@ -140,7 +140,7 @@ void Error_Handler(void);
 #define BANNER_SIZE 48
 #define BANNER_WIN_TEXT "YOU WIN!!"
 #define BANNER_LOSE_TEXT "you lose :("
-#define BANNER_CREDITS_PATTERN "%lu Credits"
+#define BANNER_CREDITS_PATTERN "%u Credits"
 
 #define SLOT_CELL_COLUMNS 5
 #define SLOT_CELL_ROWS 3

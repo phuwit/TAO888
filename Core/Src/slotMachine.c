@@ -32,7 +32,7 @@ uint32_t lastUpdate;
 SlotCol slotCols[SLOT_CELL_COLUMNS];
 SlotSymbol symbolReciever[SLOT_CELL_COLUMNS * SLOT_CELL_ROWS];
 
-uint8_t payoutCredits = 0;
+uint8_t payoutAmount = 0;
 
 volatile uint32_t credits = 0;
 volatile State currentState = WAITING;
@@ -421,10 +421,10 @@ __weak void TAO888_SlotMachine_RoundEndCallback(SlotSymbol *displayedSymbols) {
     TAO888_SlotMachine_PayoutCallback(totalCredits);
   }
 
-__weak void TAO888_SlotMachine_PayoutCallback(uint16_t credits) {
-  payoutCredits = credits;
-  Serial_Debug_Printf("\r\nPaying out: %d credits\r\n", payoutCredits);
-  TAO888_SlotMachine_SendCommandToAux(&AUX_COIN_UART_HANDLE, payoutCredits);
+__weak void TAO888_SlotMachine_PayoutCallback(uint16_t coinAmount) {
+  payoutAmount = coinAmount;
+  Serial_Debug_Printf("\r\nPaying out: %d credits\r\n", payoutAmount);
+  TAO888_SlotMachine_SendCommandToAux(&AUX_COIN_UART_HANDLE, payoutAmount);
 }
 
 SlotSymbol TAO888_SlotMachine_GetRandomSymbol() {

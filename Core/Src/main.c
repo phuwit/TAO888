@@ -164,7 +164,6 @@ int main(void)
   HAL_TIM_Base_Stop_IT(&htim2);
 
   // HAL_UART_Receive_IT(&AUX_COIN_UART_HANDLE, &coinUartBuffer, sizeof(coinUartBuffer));
-  HAL_UART_Receive_IT(&AUX_COIN_UART_HANDLE, &coinUartBuffer, sizeof(coinUartBuffer));
 
   ILI9341_HandleTypeDef lcd =
       ILI9341_Init(&hspi5, LCD_CS_GPIO_Port, LCD_CS_Pin, LCD_DC_GPIO_Port,
