@@ -41,6 +41,8 @@ volatile bool stateTimerSet = false;
 volatile bool bannerUpdated = false;
 
 void TAO888_SlotMachine_Init(ILI9341_HandleTypeDef *lcd) {
+  TAO888_SlotMachine_SendCommandToAux(&AUX_MUSIC_UART_HANDLE, MUSIC_COMMAND_MUSIC_IDLE);
+
   for (int i = 0; i < SLOT_SYMBOLS_LENGTH; i += 1) {
     if (i == 0) {
       slotSymbolsRandomLowerBound[0] = 0;
@@ -151,6 +153,8 @@ void TAO888_SlotMachine_StartCycle() {
     currentState = SHUFFLE;
     bannerUpdated = true;
     TAO888_Banner_UpdateCredits(&banner, credits);
+    TAO888_SlotMachine_SendCommandToAux(&AUX_MUSIC_UART_HANDLE, MUSIC_COMMAND_MUSIC_SPIN);
+    TAO888_SlotMachine_SendCommandToAux(&huart3, 'A');
   } else {
     Serial_Debug_Printf("cannot start cycle\r\n");
   }
@@ -173,6 +177,9 @@ void TAO888_SlotMachine_IncrementState() {
     currentState = 0;
     TAO888_SlotCols_Offset(slotCols);
   }
+  if (currentState == WAITING) {
+    TAO888_SlotMachine_SendCommandToAux(&AUX_MUSIC_UART_HANDLE, MUSIC_COMMAND_MUSIC_IDLE);
+  }
   stateTimerSet = false;
   Serial_Debug_Printf(" -> %d\r\n", currentState);
 }
@@ -194,10 +201,10 @@ static uint16_t checkCustomPayline(SlotSymbol *displayedSymbols, const int path[
         Serial_Debug_Printf("%d", displayedSymbols[col * SLOT_CELL_ROWS + row].index);
     }
     Serial_Debug_Printf("] -> ");
-    
+
     int count = 1;
     SlotSymbol *matchSymbol = &displayedSymbols[path[0][0] * SLOT_CELL_ROWS + path[0][1]];
-    
+
     // if first position is Wild, find first non-Wild symbol
     if (matchSymbol->index == WILD_SYMBOL.index) {
         for (int i = 1; i < pathLength; i++) {
@@ -210,19 +217,19 @@ static uint16_t checkCustomPayline(SlotSymbol *displayedSymbols, const int path[
             }
         }
     }
-    
+
     for (int i = 1; i < pathLength; i++) {
         int col = path[i][0];
         int row = path[i][1];
         SlotSymbol *next = &displayedSymbols[col * SLOT_CELL_ROWS + row];
-        
+
         if (next->index == WILD_SYMBOL.index || next->index == matchSymbol->index) {
             count++;
         } else {
             break;
         }
     }
-    
+
     if (count >= 3) {
         uint16_t lineScore = scoreLine(matchSymbol, count);
         Serial_Debug_Printf("✓ Matched %d symbols (idx=%d) => +%d credits\r\n",
@@ -445,61 +452,61 @@ __weak void TAO888_SlotMachine_RoundEndCallback(SlotSymbol *displayedSymbols) {
     // -------------------- V-SHAPE PAYLINES --------------------
     if (SLOT_CELL_COLUMNS >= 5 && SLOT_CELL_ROWS >= 3) {
         Serial_Debug_Printf("--- Checking V-SHAPE Paylines ---\r\n");
-        
+
         // V-Shape ∨
         const int vPath[5][2] = {{0,0}, {1,1}, {2,2}, {3,1}, {4,0}};
         totalCredits += checkCustomPayline(displayedSymbols, vPath, 5, "V-Down  ");
-        
+
         // Inverted V-Shape ∧
         const int invVPath[5][2] = {{0,2}, {1,1}, {2,0}, {3,1}, {4,2}};
         totalCredits += checkCustomPayline(displayedSymbols, invVPath, 5, "V-Up    ");
-        
+
         Serial_Debug_Printf("\r\n");
     }
 
     // -------------------- ZIGZAG PAYLINES --------------------
     if (SLOT_CELL_COLUMNS >= 5 && SLOT_CELL_ROWS >= 3) {
         Serial_Debug_Printf("--- Checking ZIGZAG Paylines ---\r\n");
-        
+
         // W-Shape (center-top-center-top-center)
         const int wPath[5][2] = {{0,1}, {1,0}, {2,1}, {3,0}, {4,1}};
         totalCredits += checkCustomPayline(displayedSymbols, wPath, 5, "Zigzag W");
-        
+
         // M-Shape (top-center-top-center-top)
         const int mPath[5][2] = {{0,0}, {1,1}, {2,0}, {3,1}, {4,0}};
         totalCredits += checkCustomPayline(displayedSymbols, mPath, 5, "Zigzag M");
-        
+
         // Zigzag Lower (center-bottom-center-bottom-center)
         const int zLowerPath[5][2] = {{0,1}, {1,2}, {2,1}, {3,2}, {4,1}};
         totalCredits += checkCustomPayline(displayedSymbols, zLowerPath, 5, "Zigzag L");
-        
+
         // M-Lower (bottom-center-bottom-center-bottom)
         const int mLowerPath[5][2] = {{0,2}, {1,1}, {2,2}, {3,1}, {4,2}};
         totalCredits += checkCustomPayline(displayedSymbols, mLowerPath, 5, "Zigzag m");
-        
+
         Serial_Debug_Printf("\r\n");
     }
 
     // -------------------- STEP PATTERN PAYLINES --------------------
     if (SLOT_CELL_COLUMNS >= 5 && SLOT_CELL_ROWS >= 3) {
         Serial_Debug_Printf("--- Checking STEP Paylines ---\r\n");
-        
+
         // step up 1: bottom-bottom-center-center-top
         const int stepUp1[5][2] = {{0,2}, {1,2}, {2,1}, {3,1}, {4,0}};
         totalCredits += checkCustomPayline(displayedSymbols, stepUp1, 5, "Step ⌊⌉ ");
-        
+
         // step up 2: bottom-center-center-top-top
         const int stepUp2[5][2] = {{0,2}, {1,1}, {2,1}, {3,0}, {4,0}};
         totalCredits += checkCustomPayline(displayedSymbols, stepUp2, 5, "Step ⌊‾ ");
-        
+
         // step down 1: top-top-center-center-bottom
         const int stepDown1[5][2] = {{0,0}, {1,0}, {2,1}, {3,1}, {4,2}};
         totalCredits += checkCustomPayline(displayedSymbols, stepDown1, 5, "Step ⌈⌋ ");
-        
+
         // step down 2: top-center-center-bottom-bottom
         const int stepDown2[5][2] = {{0,0}, {1,1}, {2,1}, {3,2}, {4,2}};
         totalCredits += checkCustomPayline(displayedSymbols, stepDown2, 5, "Step ‾⌋ ");
-        
+
         Serial_Debug_Printf("\r\n");
     }
 
@@ -530,6 +537,7 @@ __weak void TAO888_SlotMachine_RoundEndCallback(SlotSymbol *displayedSymbols) {
     Serial_Debug_Printf("TOTAL Credits: %d\r\n", totalCredits);
     Serial_Debug_Printf("============================\r\n\r\n");
     TAO888_SlotMachine_PayoutCallback(totalCredits);
+    TAO888_SlotMachine_SendCommandToAux(&AUX_MUSIC_UART_HANDLE, MUSIC_COMMAND_MUSIC_WIN);
 }
 
 __weak void TAO888_SlotMachine_PayoutCallback(uint16_t coinAmount) {
@@ -570,5 +578,6 @@ void TAO888_SlotMachine_IncrementCredits(uint8_t amount) {
 }
 
 void TAO888_SlotMachine_SendCommandToAux(UART_HandleTypeDef* AuxUart, const uint8_t command) {
+  Serial_Debug_Printf("sending command to aux: %x\r\n", command);
   HAL_UART_Transmit(AuxUart, &command, sizeof(command), AUX_UART_TIMEOUT);
 }

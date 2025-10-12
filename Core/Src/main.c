@@ -96,6 +96,7 @@ PCD_HandleTypeDef hpcd_USB_OTG_FS;
 volatile bool spi5Transferable = true;
 
 uint8_t coinUartBuffer;
+uint8_t computerUartBuffer;
 
 /* USER CODE END PV */
 
@@ -164,6 +165,7 @@ int main(void)
   HAL_TIM_Base_Stop_IT(&htim2);
 
   // HAL_UART_Receive_IT(&AUX_COIN_UART_HANDLE, &coinUartBuffer, sizeof(coinUartBuffer));
+  HAL_UART_Receive_IT(&huart3, &computerUartBuffer, sizeof(computerUartBuffer));
 
   ILI9341_HandleTypeDef lcd =
       ILI9341_Init(&hspi5, LCD_CS_GPIO_Port, LCD_CS_Pin, LCD_DC_GPIO_Port,
@@ -664,14 +666,19 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 }
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
-  if (huart == &AUX_COIN_UART_HANDLE) {
+  if (huart == &AUX_COIN_UART_HANDLE && coinUartBuffer != 0) {
     Serial_Debug_Printf("coinUartBuffer = %x\r\n", coinUartBuffer);
     if (coinUartBuffer == COIN_COMMAND_ADD_COIN) {
       TAO888_SlotMachine_IncrementCredits(10);
     }
     HAL_UART_Receive_IT(&AUX_COIN_UART_HANDLE, &coinUartBuffer, sizeof(coinUartBuffer));
   } else if (huart == &huart3) {
-    TAO888_SlotMachine_IncrementCredits(10);
+    if (computerUartBuffer == ADMIN_COMMAND_ADD_COIN) {
+      TAO888_SlotMachine_IncrementCredits(10);
+    } else if (computerUartBuffer == ADMIN_COMMAND_STOP_MUSIC) {
+      HAL_UART_Transmit(&AUX_MUSIC_UART_HANDLE, 0x00, 1, AUX_UART_TIMEOUT);
+    }
+    HAL_UART_Receive_IT(&huart3, &computerUartBuffer, sizeof(computerUartBuffer));
   }
 }
 

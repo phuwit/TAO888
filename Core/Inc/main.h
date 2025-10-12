@@ -43,6 +43,7 @@ extern "C" {
 extern RNG_HandleTypeDef hrng;
 extern UART_HandleTypeDef AUX_COIN_UART_HANDLE;
 extern UART_HandleTypeDef AUX_MUSIC_UART_HANDLE;
+extern UART_HandleTypeDef huart3;
 
 /* USER CODE END ET */
 
@@ -161,6 +162,9 @@ void Error_Handler(void);
 #define MUSIC_COMMAND_MUSIC_SPIN  0x02
 #define MUSIC_COMMAND_MUSIC_WIN   0x03
 #define MUSIC_COMMAND_MUSIC_LOSE  0x04
+
+#define ADMIN_COMMAND_ADD_COIN 'c'
+#define ADMIN_COMMAND_STOP_MUSIC 's'
 
 /* USER CODE END Private defines */
 
