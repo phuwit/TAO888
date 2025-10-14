@@ -719,7 +719,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
     Serial_Debug_Println("Received interrupt from Button-4");
   } else if (GPIO_Pin == GPIO_PIN_13) {
     // Serial_Debug_Println("Received interrupt from B1");
-    // TAO888_SlotMachine_StartCycle();
+    TAO888_SlotMachine_StartCycle();
   }
 }
 

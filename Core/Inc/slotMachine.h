@@ -44,13 +44,13 @@ typedef struct {
 
 static const StateConfig stateConfig[] = {
     {true, 0, 0, -12, 0, 5, false},
-    {false, 500000, 0, -24, 0, 5, false},
-    {false, 100000, 0, -8, 0, 5, true},
+    {false, 750000, 0, -24, 0, 5, false},
+    {false, 150000, 0, -8, 0, 5, true},
     {false, 100000, 0, -8, 1, 5, true},
     {false, 100000, 0, -8, 2, 5, true},
     {false, 100000, 0, -8, 3, 5, true},
     {false, 100000, 0, -8, 4, 5, true},
-    {false, 0, 0, 0, 0, 0, false},
+    {true, 3000000, 0, 0, 0, 0, false},
 };
 
 void TAO888_SlotMachine_Init(ILI9341_HandleTypeDef *lcd);

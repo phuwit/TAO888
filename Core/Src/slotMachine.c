@@ -78,24 +78,9 @@ void TAO888_SlotMachine_Init(ILI9341_HandleTypeDef *lcd) {
 }
 
 void TAO888_SlotMachine_Update(ILI9341_HandleTypeDef *lcd) {
-  // switch (currentState) {
-  //   case WAITING:
-  //     break;
-  //   case SHUFFLE:
-  //     break;
-  //   case SCROLL5:
-  //     break;
-  //   case SCROLL4:
-  //     break;
-  //   case SCROLL3:
-  //     break;
-  //   case SCROLL2:
-  //     break;
-  //   case SCROLL1:
-  //     break;
-  //   case RESULT:
-  //     break;
-  // }
+	State state = currentState;
+	StateConfig config = stateConfig[state];
+	
   if (lastUpdate < MINIMUM_UPDATE_MS) {
     return;
   }
@@ -106,10 +91,10 @@ void TAO888_SlotMachine_Update(ILI9341_HandleTypeDef *lcd) {
     TAO888_Banner_Draw(&banner, lcd);
   }
 
-  if (stateConfig[currentState].scrollAmount != 0) {
-    uint8_t indexStart = stateConfig[currentState].scrollRowStartIndex;
+  if (config.scrollAmount != 0) {
+    uint8_t indexStart = config.scrollRowStartIndex;
     if (startAdvancingState) {
-      if ((currentState == WAITING || currentState == SHUFFLE) ||
+      if ((state == WAITING || state == SHUFFLE) ||
           ((slotCols[indexStart].frameBuffer.readRow % SLOT_CELL_SIZE) == 0)) {
         startAdvancingState = false;
         TAO888_SlotMachine_IncrementState();
@@ -123,26 +108,26 @@ void TAO888_SlotMachine_Update(ILI9341_HandleTypeDef *lcd) {
     }
 
     for (int index = indexStart;
-         index < stateConfig[currentState].scrollRowEndIndex; index += 1) {
+         index < config.scrollRowEndIndex; index += 1) {
       TAO888_SlotCols_ScrollOne(&slotCols[index],
-                                stateConfig[currentState].scrollAmount,
-                                stateConfig[currentState].scrollSnap);
+                                config.scrollAmount,
+                                config.scrollSnap);
       TAO888_SlotCols_CommitOne(&slotCols[index], lcd);
     }
   }
 
-  if ((stateConfig[currentState].advanceMicroSecLow != 0) &&
+  if ((config.advanceMicroSecLow != 0) &&
       (stateTimerSet == false)) {
     uint32_t advanceDelayMicroSec =
-        stateConfig[currentState].advanceMicroSecLow;
-    if (stateConfig[currentState].randomAdvanceMicroSecMod > 0) {
+        config.advanceMicroSecLow;
+    if (config.randomAdvanceMicroSecMod > 0) {
       advanceDelayMicroSec =
-          (stateConfig[currentState].advanceMicroSecLow +
+          (config.advanceMicroSecLow +
            (HAL_RNG_GetRandomNumber(&hrng) %
-            stateConfig[currentState].randomAdvanceMicroSecMod));
+            config.randomAdvanceMicroSecMod));
     }
     Serial_Debug_Printf("setting timer for %d in state %d\r\n",
-                        advanceDelayMicroSec, currentState);
+                        advanceDelayMicroSec, state);
     __HAL_TIM_SET_AUTORELOAD(&NS_TIMER, advanceDelayMicroSec);
     HAL_TIM_Base_Start_IT(&NS_TIMER);
     stateTimerSet = true;
@@ -155,9 +140,9 @@ void TAO888_SlotMachine_StartCycle() {
     credits -= 10;
     currentState = SHUFFLE;
     bannerUpdated = true;
+		stateTimerSet = false;
     TAO888_Banner_UpdateCredits(&banner, credits);
     TAO888_SlotMachine_SendCommandToAux(&AUX_MUSIC_UART_HANDLE, MUSIC_COMMAND_MUSIC_SPIN);
-    TAO888_SlotMachine_SendCommandToAux(&huart3, 'A');
   } else {
     Serial_Debug_Printf("cannot start cycle\r\n");
   }
@@ -253,7 +238,6 @@ static uint16_t checkCustomPayline(SlotSymbol *displayedSymbols, const int path[
 }
 
 __weak void TAO888_SlotMachine_RoundEndCallback(SlotSymbol *displayedSymbols) {
-
     uint16_t totalCredits = 0;
 
     // Column-Major: [Col0][Col1][Col2]...
@@ -554,19 +538,19 @@ __weak void TAO888_SlotMachine_RoundEndCallback(SlotSymbol *displayedSymbols) {
 			int payoutCoins = totalCredits / 10;
 			int remainCredits = totalCredits % 10;
 			
+			TAO888_SlotMachine_SendCommandToAux(&AUX_MUSIC_UART_HANDLE, MUSIC_COMMAND_MUSIC_WIN);
+			Serial_Debug_Printf(
+				"Total %d credit(s) → Payout %d credit(s), keep %d credit(s)\r\n",
+				totalCredits, payoutCoins, remainCredits
+			);
+
 			if (payoutCoins > 0) {
-					TAO888_SlotMachine_SendCommandToAux(&AUX_MUSIC_UART_HANDLE, MUSIC_COMMAND_MUSIC_WIN);
-					TAO888_SlotMachine_PayoutCallback(payoutCoins);
-        }
+				TAO888_SlotMachine_PayoutCallback(payoutCoins);
+			}
 
-        if (remainCredits > 0) {
-            TAO888_SlotMachine_IncrementCredits(remainCredits);
-        }
-
-        Serial_Debug_Printf(
-            "Total %d credit(s) → Payout %d credit(s), keep %d credit(s)\r\n",
-            totalCredits, payoutCoins, remainCredits
-        );
+			if (remainCredits > 0) {
+				TAO888_SlotMachine_IncrementCredits(remainCredits);
+			}
     } else {
 			TAO888_SlotMachine_SendCommandToAux(&AUX_MUSIC_UART_HANDLE, MUSIC_COMMAND_MUSIC_LOSE);
       Serial_Debug_Printf("You Lose..so sad\r\n");
@@ -602,12 +586,11 @@ void TAO888_SlotMachine_GetDisplayedSymbols(SlotSymbol *symbolReciever) {
 
 void TAO888_SlotMachine_IncrementCredits(uint8_t amount) {
   Serial_Debug_Printf("adding credits\r\n");
-
   credits += amount;
+	TAO888_SlotMachine_SendCommandToAux(&AUX_MUSIC_UART_HANDLE, MUSIC_COMMAND_MUSIC_COIN);
   TAO888_Banner_UpdateCredits(&banner, credits);
   bannerUpdated = true;
   Serial_Debug_Printf("credits = %u\r\n", credits);
-
 }
 
 void TAO888_SlotMachine_SendCommandToAux(UART_HandleTypeDef* AuxUart, const uint8_t command) {
