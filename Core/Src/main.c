@@ -18,6 +18,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "stm32f7xx_hal_tim.h"
 #include "string.h"
 
 /* Private includes ----------------------------------------------------------*/
@@ -84,6 +85,7 @@ SPI_HandleTypeDef hspi5;
 DMA_HandleTypeDef hdma_spi5_tx;
 
 TIM_HandleTypeDef htim2;
+TIM_HandleTypeDef htim4;
 
 UART_HandleTypeDef huart4;
 UART_HandleTypeDef huart5;
@@ -112,6 +114,7 @@ static void MX_RNG_Init(void);
 static void MX_TIM2_Init(void);
 static void MX_UART4_Init(void);
 static void MX_UART5_Init(void);
+static void MX_TIM4_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -159,10 +162,13 @@ int main(void)
   MX_TIM2_Init();
   MX_UART4_Init();
   MX_UART5_Init();
+  MX_TIM4_Init();
   /* USER CODE BEGIN 2 */
 
   HAL_TIM_Base_Init(&htim2);
   HAL_TIM_Base_Stop_IT(&htim2);
+
+  HAL_TIM_Encoder_Start(&htim4, TIM_CHANNEL_ALL);
 
   // HAL_UART_Receive_IT(&AUX_COIN_UART_HANDLE, &coinUartBuffer, sizeof(coinUartBuffer));
   HAL_UART_Receive_IT(&huart3, &computerUartBuffer, sizeof(computerUartBuffer));
@@ -184,7 +190,10 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
 
+    TAO888_SlotMachine_PollRotaryEncoderAndStart(TIM4);
     TAO888_SlotMachine_Update(&lcd);
+
+    // Serial_Printf("Encoder counter = %d\r\n", (int16_t)TIM4->CNT);
 
     // HAL_Delay(500);
   }
@@ -405,6 +414,55 @@ static void MX_TIM2_Init(void)
   /* USER CODE BEGIN TIM2_Init 2 */
 
   /* USER CODE END TIM2_Init 2 */
+
+}
+
+/**
+  * @brief TIM4 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM4_Init(void)
+{
+
+  /* USER CODE BEGIN TIM4_Init 0 */
+
+  /* USER CODE END TIM4_Init 0 */
+
+  TIM_Encoder_InitTypeDef sConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM4_Init 1 */
+
+  /* USER CODE END TIM4_Init 1 */
+  htim4.Instance = TIM4;
+  htim4.Init.Prescaler = 0;
+  htim4.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim4.Init.Period = 65535;
+  htim4.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim4.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  sConfig.EncoderMode = TIM_ENCODERMODE_TI1;
+  sConfig.IC1Polarity = TIM_ICPOLARITY_RISING;
+  sConfig.IC1Selection = TIM_ICSELECTION_DIRECTTI;
+  sConfig.IC1Prescaler = TIM_ICPSC_DIV1;
+  sConfig.IC1Filter = 0;
+  sConfig.IC2Polarity = TIM_ICPOLARITY_RISING;
+  sConfig.IC2Selection = TIM_ICSELECTION_DIRECTTI;
+  sConfig.IC2Prescaler = TIM_ICPSC_DIV1;
+  sConfig.IC2Filter = 0;
+  if (HAL_TIM_Encoder_Init(&htim4, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim4, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM4_Init 2 */
+
+  /* USER CODE END TIM4_Init 2 */
 
 }
 
@@ -661,7 +719,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
     Serial_Debug_Println("Received interrupt from Button-4");
   } else if (GPIO_Pin == GPIO_PIN_13) {
     // Serial_Debug_Println("Received interrupt from B1");
-    TAO888_SlotMachine_StartCycle();
+    // TAO888_SlotMachine_StartCycle();
   }
 }
 
@@ -689,7 +747,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
     HAL_TIM_Base_Stop_IT(&htim2);
   }
 }
-
 
 void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi) {
   if (hspi == &hspi5) {

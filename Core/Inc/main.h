@@ -37,7 +37,7 @@ extern "C" {
 /* Exported types ------------------------------------------------------------*/
 /* USER CODE BEGIN ET */
 
-#define AUX_COIN_UART_HANDLE huart4
+#define AUX_COIN_UART_HANDLE  huart4
 #define AUX_MUSIC_UART_HANDLE huart5
 
 extern RNG_HandleTypeDef hrng;
@@ -150,6 +150,7 @@ void Error_Handler(void);
 #define SLOT_CELL_PADDING_X 8
 #define SLOT_CELL_PADDING_Y 8
 #define SLOT_SCROLL_STOPPING_AMOUNT -4
+#define SLOT_ENCODER_START_THRESHOLD 10
 
 #define AUX_UART_TIMEOUT 200
 // #define AUX_COIN_UART_HANDLE huart7

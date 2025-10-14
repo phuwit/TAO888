@@ -64,5 +64,6 @@ SlotSymbol TAO888_SlotMachine_GetRandomSymbol();
 void TAO888_SlotMachine_GetDisplayedSymbols(SlotSymbol* symbolReciever);
 void TAO888_SlotMachine_IncrementCredits(uint8_t amount);
 void TAO888_SlotMachine_SendCommandToAux(UART_HandleTypeDef* AuxUart, const uint8_t command);
+void TAO888_SlotMachine_PollRotaryEncoderAndStart(TIM_TypeDef* EncoderHandle);
 
 #endif

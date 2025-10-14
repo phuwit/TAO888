@@ -4,6 +4,7 @@
 #include "serialUtils.h"
 #include "slotCols.h"
 #include "slotSymbols.h"
+#include "stm32f767xx.h"
 #include "stm32f7xx_hal.h"
 #include "stm32f7xx_hal_rng.h"
 #include "stm32f7xx_hal_tim.h"
@@ -33,6 +34,7 @@ SlotCol slotCols[SLOT_CELL_COLUMNS];
 SlotSymbol symbolReciever[SLOT_CELL_COLUMNS * SLOT_CELL_ROWS];
 
 uint8_t payoutAmount = 0;
+int16_t encoderLastValue = 0;
 
 volatile uint32_t credits = 0;
 volatile State currentState = WAITING;
@@ -191,8 +193,8 @@ void TAO888_SlotMachine_IncrementState() {
 
 // -------------------- HELPER --------------------
 static inline uint16_t scoreLine(SlotSymbol *symbol, int count) {
-    float multiplier = (symbol->index == WILD_SYMBOL.index) 
-        ? WILD_SYMBOL.prizeMultiplier 
+    float multiplier = (symbol->index == WILD_SYMBOL.index)
+        ? WILD_SYMBOL.prizeMultiplier
         : symbol->prizeMultiplier;
 
     float rawScore = count * multiplier * multiCredits;
@@ -621,4 +623,15 @@ void TAO888_SlotMachine_IncrementCredits(uint8_t amount) {
 void TAO888_SlotMachine_SendCommandToAux(UART_HandleTypeDef* AuxUart, const uint8_t command) {
   Serial_Debug_Printf("sending command to aux: %x\r\n", command);
   HAL_UART_Transmit(AuxUart, &command, sizeof(command), AUX_UART_TIMEOUT);
+}
+
+void TAO888_SlotMachine_PollRotaryEncoderAndStart(TIM_TypeDef* EncoderHandle) {
+  int16_t currentValue = EncoderHandle->CNT;
+  // Serial_Debug_Printf("encoder: %d -> %d\r\n", encoderLastValue, currentValue);
+  if ((currentValue - encoderLastValue) >= SLOT_ENCODER_START_THRESHOLD) {
+    TAO888_SlotMachine_StartCycle();
+    encoderLastValue = currentValue;
+  } else if ((currentValue - encoderLastValue) < 0) {
+    encoderLastValue = currentValue;
+  }
 }
