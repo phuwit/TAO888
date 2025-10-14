@@ -38,6 +38,7 @@ volatile uint32_t credits = 0;
 volatile State currentState = WAITING;
 volatile bool startAdvancingState = false;
 volatile bool stateTimerSet = false;
+
 volatile bool bannerUpdated = false;
 
 bool winLose = false;
@@ -138,10 +139,6 @@ void TAO888_SlotMachine_Update(ILI9341_HandleTypeDef *lcd) {
            (HAL_RNG_GetRandomNumber(&hrng) %
             stateConfig[currentState].randomAdvanceMicroSecMod));
     }
-    if (currentState == RESULT) {
-      TAO888_SlotMachine_GetDisplayedSymbols(symbolReciever);
-      TAO888_SlotMachine_RoundEndCallback(symbolReciever);
-    }
     Serial_Debug_Printf("setting timer for %d in state %d\r\n",
                         advanceDelayMicroSec, currentState);
     __HAL_TIM_SET_AUTORELOAD(&NS_TIMER, advanceDelayMicroSec);
@@ -151,9 +148,9 @@ void TAO888_SlotMachine_Update(ILI9341_HandleTypeDef *lcd) {
 }
 
 void TAO888_SlotMachine_StartCycle() {
-  if ((currentState == WAITING || currentState == RESULT) && (credits > 0)) {
+  if ((currentState == WAITING || currentState == RESULT) && (credits >= 10)) {
     Serial_Debug_Printf("starting cycle\r\n");
-    credits -= 1;
+    credits -= 10;
     currentState = SHUFFLE;
     bannerUpdated = true;
     TAO888_Banner_UpdateCredits(&banner, credits);
@@ -168,10 +165,10 @@ void TAO888_SlotMachine_AdvanceStateGracefully() {
   Serial_Debug_Printf("advancing gracefully\r\n");
   const StateConfig config = stateConfig[currentState];
   if (config.advanceOnInput == true) {
-    TAO888_SlotMachine_IncrementState();
-  } else {
-    startAdvancingState = true;
-  }
+		TAO888_SlotMachine_IncrementState();
+	} else {
+	startAdvancingState = true;
+	}
 }
 
 void TAO888_SlotMachine_IncrementState() {
@@ -186,13 +183,24 @@ void TAO888_SlotMachine_IncrementState() {
   }
   stateTimerSet = false;
   Serial_Debug_Printf(" -> %d\r\n", currentState);
+	if (currentState == RESULT) {
+		TAO888_SlotMachine_GetDisplayedSymbols(symbolReciever);
+		TAO888_SlotMachine_RoundEndCallback(symbolReciever);
+	}
 }
 
 // -------------------- HELPER --------------------
 static inline uint16_t scoreLine(SlotSymbol *symbol, int count) {
-    if (symbol->index == WILD_SYMBOL.index)
-        return count * 10 * multiCredits; // all wilds
-    return count * symbol->prizeMultiplier * multiCredits;
+    float multiplier = (symbol->index == WILD_SYMBOL.index) 
+        ? WILD_SYMBOL.prizeMultiplier 
+        : symbol->prizeMultiplier;
+
+    float rawScore = count * multiplier * multiCredits;
+
+    Serial_Debug_Printf("   [DEBUG] scoreLine: idx=%d, count=%d, mult=%.2f, rawScore=%.2f\r\n",
+                        symbol->index, count, multiplier, rawScore);
+
+    return (uint16_t)(rawScore + 0.5f);
 }
 
 // check a custom payline defined by path
@@ -237,7 +245,7 @@ static uint16_t checkCustomPayline(SlotSymbol *displayedSymbols, const int path[
     if (count >= 3) {
         uint16_t lineScore = scoreLine(matchSymbol, count);
         Serial_Debug_Printf("✓ Matched %d symbols (idx=%d) => +%d credits\r\n",
-                             count, matchSymbol->index, lineScore);
+                            count, matchSymbol->index, lineScore);
         winLose = true;
         return lineScore;
     } else {
@@ -247,6 +255,7 @@ static uint16_t checkCustomPayline(SlotSymbol *displayedSymbols, const int path[
 }
 
 __weak void TAO888_SlotMachine_RoundEndCallback(SlotSymbol *displayedSymbols) {
+
     uint16_t totalCredits = 0;
 
     // Column-Major: [Col0][Col1][Col2]...
@@ -316,11 +325,11 @@ __weak void TAO888_SlotMachine_RoundEndCallback(SlotSymbol *displayedSymbols) {
         }
 
         if (count >= 3) {
-          uint16_t lineScore = scoreLine(matchSymbol, count);
-          totalCredits += lineScore;
-          Serial_Debug_Printf("✓ Matched %d symbols (idx=%d) => +%d credits\r\n",
+        uint16_t lineScore = scoreLine(matchSymbol, count);
+        totalCredits += lineScore;
+        Serial_Debug_Printf("✓ Matched %d symbols (idx=%d) => +%d credits\r\n",
                                 count, matchSymbol->index, lineScore);
-          winLose = true;
+        winLose = true;
         } else {
             Serial_Debug_Printf("✗ Only %d symbols (need 3+)\r\n", count);
         }
@@ -367,7 +376,7 @@ __weak void TAO888_SlotMachine_RoundEndCallback(SlotSymbol *displayedSymbols) {
             uint16_t lineScore = scoreLine(matchSymbol, count);
             totalCredits += lineScore;
             Serial_Debug_Printf("✓ Matched %d symbols (idx=%d) => +%d credits\r\n",
-                                 count, matchSymbol->index, lineScore);
+                                count, matchSymbol->index, lineScore);
             winLose = true;
         } else {
             Serial_Debug_Printf("✗ Only %d symbols (need 3+)\r\n", count);
@@ -411,7 +420,7 @@ __weak void TAO888_SlotMachine_RoundEndCallback(SlotSymbol *displayedSymbols) {
         uint16_t lineScore = scoreLine(diag1, countDiag1);
         totalCredits += lineScore;
         Serial_Debug_Printf("✓ Matched %d symbols (idx=%d) => +%d credits\r\n",
-                             countDiag1, diag1->index, lineScore);
+                            countDiag1, diag1->index, lineScore);
         winLose = true;
     } else {
         Serial_Debug_Printf("✗ Only %d symbols (need 3+)\r\n", countDiag1);
@@ -452,7 +461,7 @@ __weak void TAO888_SlotMachine_RoundEndCallback(SlotSymbol *displayedSymbols) {
         uint16_t lineScore = scoreLine(diag2, countDiag2);
         totalCredits += lineScore;
         Serial_Debug_Printf("✓ Matched %d symbols (idx=%d) => +%d credits\r\n",
-                             countDiag2, diag2->index, lineScore);
+                            countDiag2, diag2->index, lineScore);
         winLose = true;
     } else {
         Serial_Debug_Printf("✗ Only %d symbols (need 3+)\r\n", countDiag2);
@@ -535,7 +544,7 @@ __weak void TAO888_SlotMachine_RoundEndCallback(SlotSymbol *displayedSymbols) {
     }
 
     if (scatterCount >= 3) {
-        uint16_t scatterScore = scatterCount * 50;
+        uint16_t scatterScore = scatterCount * SCATTER_SYMBOL.prizeMultiplier;
         totalCredits += scatterScore;
         Serial_Debug_Printf("-> ✓ %d scatters => +%d credits\r\n", scatterCount, scatterScore);
         winLose = true;
@@ -544,19 +553,32 @@ __weak void TAO888_SlotMachine_RoundEndCallback(SlotSymbol *displayedSymbols) {
     }
 
     // -------------------- FINAL PAYOUT --------------------
-    if (winLose) {
-        TAO888_Banner_UpdateWinStatus(&banner, true);
-        bannerUpdated = true;
+    Serial_Debug_Printf("\r\n========== PAYOUT ==========\r\n");
+    Serial_Debug_Printf("TOTAL Credits (before coin payout): %d\r\n", totalCredits);
+    Serial_Debug_Printf("============================\r\n\r\n");
+
+    if (totalCredits > 0) {
+        int payoutCoins = totalCredits / 10;
+        int remainCredits = totalCredits % 10;
+
+        if (payoutCoins > 0) {
+            TAO888_SlotMachine_PayoutCallback(payoutCoins);
+        }
+
+        if (remainCredits > 0) {
+            TAO888_SlotMachine_IncrementCredits(remainCredits);
+        }
+
+        Serial_Debug_Printf(
+            "💰 สรุป: ได้ทั้งหมด %d เครดิต → จ่ายออก %d เหรียญ, เก็บสะสม %d เครดิต\r\n",
+            totalCredits, payoutCoins, remainCredits
+        );
     } else {
-        TAO888_Banner_UpdateWinStatus(&banner, false);
-        bannerUpdated = true;
+        Serial_Debug_Printf("✘ ไม่ได้รางวัลในรอบนี้\r\n");
     }
 
-    Serial_Debug_Printf("\r\n========== PAYOUT ==========\r\n");
-    Serial_Debug_Printf("TOTAL Credits: %d\r\n", totalCredits);
-    Serial_Debug_Printf("============================\r\n\r\n");
-    TAO888_SlotMachine_PayoutCallback(totalCredits);
     TAO888_SlotMachine_SendCommandToAux(&AUX_MUSIC_UART_HANDLE, MUSIC_COMMAND_MUSIC_WIN);
+
 }
 
 __weak void TAO888_SlotMachine_PayoutCallback(uint16_t coinAmount) {
