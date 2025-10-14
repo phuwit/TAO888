@@ -170,7 +170,7 @@ int main(void)
 
   HAL_TIM_Encoder_Start(&htim4, TIM_CHANNEL_ALL);
 
-  // HAL_UART_Receive_IT(&AUX_COIN_UART_HANDLE, &coinUartBuffer, sizeof(coinUartBuffer));
+  HAL_UART_Receive_IT(&AUX_COIN_UART_HANDLE, &coinUartBuffer, sizeof(coinUartBuffer));
   HAL_UART_Receive_IT(&huart3, &computerUartBuffer, sizeof(computerUartBuffer));
 
   ILI9341_HandleTypeDef lcd =
@@ -724,6 +724,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 }
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
+  Serial_Debug_Printf("uart received something\r\n", coinUartBuffer);
   if (huart == &AUX_COIN_UART_HANDLE && coinUartBuffer != 0) {
     Serial_Debug_Printf("coinUartBuffer = %x\r\n", coinUartBuffer);
     if (coinUartBuffer == COIN_COMMAND_ADD_COIN) {
