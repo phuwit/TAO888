@@ -135,12 +135,15 @@ void TAO888_SlotMachine_Update(ILI9341_HandleTypeDef *lcd) {
 }
 
 void TAO888_SlotMachine_StartCycle() {
-  if ((currentState == WAITING || currentState == RESULT) && (credits >= 10)) {
+  if ((currentState == WAITING) && (credits >= 10)) {
+    // __HAL_TIM_SET_AUTORELOAD(&NS_TIMER, stateConfig[SHUFFLE].advanceMicroSecLow);
+    // HAL_TIM_Base_Start_IT(&NS_TIMER);
+    // stateTimerSet = true;
+
     Serial_Debug_Printf("starting cycle\r\n");
     credits -= 10;
     currentState = SHUFFLE;
     bannerUpdated = true;
-		stateTimerSet = false;
     TAO888_Banner_UpdateCredits(&banner, credits);
     TAO888_SlotMachine_SendCommandToAux(&AUX_MUSIC_UART_HANDLE, MUSIC_COMMAND_MUSIC_SPIN);
   } else {
