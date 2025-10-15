@@ -28,7 +28,7 @@ static const SlotSymbol PEACH_SYMBOL = {5, PEACH_IMAGE, 7, 0.4};
 static const SlotSymbol STRAWBERRY_SYMBOL = {6, STRAWBERRY_IMAGE, 5, 0.5};
 static const SlotSymbol WATERMELON_SYMBOL = {7, WATERMELON_IMAGE, 4, 0.6};
 static const SlotSymbol WILD_SYMBOL = {8, WILD_IMAGE, 3, 0.8};
-static const SlotSymbol SCATTER_SYMBOL = {9, SCATTER_IMAGE, 2, 0.10};
+static const SlotSymbol SCATTER_SYMBOL = {9, SCATTER_IMAGE, 2, 3};
 
 #define SLOT_SYMBOLS_LENGTH 10
 
