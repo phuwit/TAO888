@@ -1,7 +1,7 @@
 #ifndef TAO888_SLOT_MACHINE
 #define TAO888_SLOT_MACHINE
 
-#define NS_TIMER htim2
+#include "main.h"
 #define MINIMUM_UPDATE_MS 15
 
 #include <stdbool.h>
@@ -29,6 +29,7 @@ typedef struct {
   uint8_t scrollRowStartIndex;
   uint8_t scrollRowEndIndex;
   bool scrollSnap;
+  uint8_t stateMusicCommand;
 } StateConfig;
 
 // static const StateConfig stateConfig[] = {
@@ -43,14 +44,14 @@ typedef struct {
 // };
 
 static const StateConfig stateConfig[] = {
-    {true, 0, 0, -12, 0, 5, false},
-    {false, 750000, 0, -24, 0, 5, false},
-    {false, 150000, 0, -8, 0, 5, true},
-    {false, 100000, 0, -8, 1, 5, true},
-    {false, 100000, 0, -8, 2, 5, true},
-    {false, 100000, 0, -8, 3, 5, true},
-    {false, 100000, 0, -8, 4, 5, true},
-    {true, 1500000, 0, 0, 0, 0, false},
+    {true, 0, 0, -12, 0, 5, false, MUSIC_COMMAND_MUSIC_IDLE},
+    {false, 750000, 0, -24, 0, 5, false, MUSIC_COMMAND_MUSIC_SPIN},
+    {false, 150000, 0, -8, 0, 5, true, MUSIC_COMMAND_MUSIC_SPIN},
+    {false, 100000, 0, -8, 1, 5, true, MUSIC_COMMAND_MUSIC_SPIN},
+    {false, 100000, 0, -8, 2, 5, true, MUSIC_COMMAND_MUSIC_SPIN},
+    {false, 100000, 0, -8, 3, 5, true, MUSIC_COMMAND_MUSIC_SPIN},
+    {false, 100000, 0, -8, 4, 5, true, MUSIC_COMMAND_MUSIC_SPIN},
+    {true, 1500000, 0, 0, 0, 0, false, MUSIC_COMMAND_STOP},
 };
 
 void TAO888_SlotMachine_Init(ILI9341_HandleTypeDef *lcd);
@@ -65,5 +66,7 @@ void TAO888_SlotMachine_GetDisplayedSymbols(SlotSymbol* symbolReciever);
 void TAO888_SlotMachine_IncrementCredits(uint8_t amount);
 void TAO888_SlotMachine_SendCommandToAux(UART_HandleTypeDef* AuxUart, const uint8_t command);
 void TAO888_SlotMachine_PollRotaryEncoderAndStart(TIM_TypeDef* EncoderHandle);
+void TAO888_SlotMachine_ResetCredits();
+void TAO888_SlotMachine_RecoverMusic();
 
 #endif

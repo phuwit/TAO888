@@ -2,7 +2,7 @@
 #define SERIAL_UTILS
 
 #define UART_RETRY 50
-#define UART_HANDLE huart3
+#define UART_HANDLE DEBUG_CONSOLE_UART_HANDLE
 
 #include <stdint.h>
 

@@ -18,7 +18,6 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "stm32f7xx_hal_tim.h"
 #include "string.h"
 
 /* Private includes ----------------------------------------------------------*/
@@ -86,9 +85,11 @@ DMA_HandleTypeDef hdma_spi5_tx;
 
 TIM_HandleTypeDef htim2;
 TIM_HandleTypeDef htim4;
+TIM_HandleTypeDef htim5;
 
 UART_HandleTypeDef huart4;
 UART_HandleTypeDef huart5;
+UART_HandleTypeDef huart2;
 UART_HandleTypeDef huart3;
 
 PCD_HandleTypeDef hpcd_USB_OTG_FS;
@@ -115,6 +116,8 @@ static void MX_TIM2_Init(void);
 static void MX_UART4_Init(void);
 static void MX_UART5_Init(void);
 static void MX_TIM4_Init(void);
+static void MX_USART2_UART_Init(void);
+static void MX_TIM5_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -163,6 +166,8 @@ int main(void)
   MX_UART4_Init();
   MX_UART5_Init();
   MX_TIM4_Init();
+  MX_USART2_UART_Init();
+  MX_TIM5_Init();
   /* USER CODE BEGIN 2 */
 
   HAL_TIM_Base_Init(&htim2);
@@ -171,7 +176,7 @@ int main(void)
   HAL_TIM_Encoder_Start(&htim4, TIM_CHANNEL_ALL);
 
   HAL_UART_Receive_IT(&AUX_COIN_UART_HANDLE, &coinUartBuffer, sizeof(coinUartBuffer));
-  HAL_UART_Receive_IT(&huart3, &computerUartBuffer, sizeof(computerUartBuffer));
+  HAL_UART_Receive_IT(&DEBUG_CONSOLE_UART_HANDLE, &computerUartBuffer, sizeof(computerUartBuffer));
 
   ILI9341_HandleTypeDef lcd =
       ILI9341_Init(&hspi5, LCD_CS_GPIO_Port, LCD_CS_Pin, LCD_DC_GPIO_Port,
@@ -180,6 +185,8 @@ int main(void)
 
 
   TAO888_SlotMachine_Init(&lcd);
+
+  Serial_Debug_Printf("initialized and ready!\r\n");
 
   /* USER CODE END 2 */
 
@@ -467,6 +474,51 @@ static void MX_TIM4_Init(void)
 }
 
 /**
+  * @brief TIM5 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM5_Init(void)
+{
+
+  /* USER CODE BEGIN TIM5_Init 0 */
+
+  /* USER CODE END TIM5_Init 0 */
+
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM5_Init 1 */
+
+  /* USER CODE END TIM5_Init 1 */
+  htim5.Instance = TIM5;
+  htim5.Init.Prescaler = 108 - 1;
+  htim5.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim5.Init.Period = 0;
+  htim5.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim5.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim5) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim5, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim5, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM5_Init 2 */
+
+  /* USER CODE END TIM5_Init 2 */
+
+}
+
+/**
   * @brief UART4 Initialization Function
   * @param None
   * @retval None
@@ -533,6 +585,41 @@ static void MX_UART5_Init(void)
   /* USER CODE BEGIN UART5_Init 2 */
 
   /* USER CODE END UART5_Init 2 */
+
+}
+
+/**
+  * @brief USART2 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_USART2_UART_Init(void)
+{
+
+  /* USER CODE BEGIN USART2_Init 0 */
+
+  /* USER CODE END USART2_Init 0 */
+
+  /* USER CODE BEGIN USART2_Init 1 */
+
+  /* USER CODE END USART2_Init 1 */
+  huart2.Instance = USART2;
+  huart2.Init.BaudRate = 9600;
+  huart2.Init.WordLength = UART_WORDLENGTH_8B;
+  huart2.Init.StopBits = UART_STOPBITS_1;
+  huart2.Init.Parity = UART_PARITY_NONE;
+  huart2.Init.Mode = UART_MODE_TX_RX;
+  huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart2.Init.OverSampling = UART_OVERSAMPLING_16;
+  huart2.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
+  huart2.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
+  if (HAL_UART_Init(&huart2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN USART2_Init 2 */
+
+  /* USER CODE END USART2_Init 2 */
 
 }
 
@@ -719,7 +806,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
     Serial_Debug_Println("Received interrupt from Button-4");
   } else if (GPIO_Pin == GPIO_PIN_13) {
     // Serial_Debug_Println("Received interrupt from B1");
-    TAO888_SlotMachine_StartCycle();
+    // TAO888_SlotMachine_StartCycle();
   }
 }
 
@@ -731,27 +818,33 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
       TAO888_SlotMachine_IncrementCredits(10);
     }
     HAL_UART_Receive_IT(&AUX_COIN_UART_HANDLE, &coinUartBuffer, sizeof(coinUartBuffer));
-  } else if (huart == &huart3) {
+  } else if (huart == &DEBUG_CONSOLE_UART_HANDLE) {
     if (computerUartBuffer == ADMIN_COMMAND_ADD_COIN) {
       TAO888_SlotMachine_IncrementCredits(10);
     } else if (computerUartBuffer == ADMIN_COMMAND_STOP_MUSIC) {
       HAL_UART_Transmit(&AUX_MUSIC_UART_HANDLE, 0x00, 1, AUX_UART_TIMEOUT);
+    } else if (computerUartBuffer == ADMIN_COMMAND_RESET_CREDIT) {
+      TAO888_SlotMachine_ResetCredits();
+    } else if (computerUartBuffer >= '1' && computerUartBuffer <= '9') {
+      TAO888_SlotMachine_SendCommandToAux(&AUX_COIN_UART_HANDLE, computerUartBuffer - '0');
     }
-    HAL_UART_Receive_IT(&huart3, &computerUartBuffer, sizeof(computerUartBuffer));
+    HAL_UART_Receive_IT(&DEBUG_CONSOLE_UART_HANDLE, &computerUartBuffer, sizeof(computerUartBuffer));
   }
 }
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
-  if (htim == &htim2) {
-    // Serial_Debug_Println("Received interrupt from TIM2");
+  if (htim == &SLOT_STATE_TRANSITION_NS_TIMER) {
     TAO888_SlotMachine_AdvanceStateGracefully();
-    HAL_TIM_Base_Stop_IT(&htim2);
+    HAL_TIM_Base_Stop_IT(&SLOT_STATE_TRANSITION_NS_TIMER);
+  } else if (htim == &SLOT_MUSIC_RECOVERY_NS_TIMER) {
+    TAO888_SlotMachine_RecoverMusic();
+    HAL_TIM_Base_Stop_IT(&SLOT_MUSIC_RECOVERY_NS_TIMER);
   }
 }
 
 void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi) {
   if (hspi == &hspi5) {
-    HAL_UART_Transmit(&huart3, (uint8_t *)"TxCompleted\r\n", 14, 50);
+    HAL_UART_Transmit(&DEBUG_CONSOLE_UART_HANDLE, (uint8_t *)"TxCompleted\r\n", 14, 50);
     spi5Transferable = true;
   }
 }

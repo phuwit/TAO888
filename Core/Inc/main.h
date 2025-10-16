@@ -37,13 +37,18 @@ extern "C" {
 /* Exported types ------------------------------------------------------------*/
 /* USER CODE BEGIN ET */
 
-#define AUX_COIN_UART_HANDLE  huart4
+#define AUX_COIN_UART_HANDLE  huart2
 #define AUX_MUSIC_UART_HANDLE huart5
+#define DEBUG_CONSOLE_UART_HANDLE huart3
+#define SLOT_STATE_TRANSITION_NS_TIMER htim2
+#define SLOT_MUSIC_RECOVERY_NS_TIMER htim5
 
 extern RNG_HandleTypeDef hrng;
 extern UART_HandleTypeDef AUX_COIN_UART_HANDLE;
 extern UART_HandleTypeDef AUX_MUSIC_UART_HANDLE;
 extern UART_HandleTypeDef huart3;
+extern TIM_HandleTypeDef SLOT_STATE_TRANSITION_NS_TIMER;
+extern TIM_HandleTypeDef SLOT_MUSIC_RECOVERY_NS_TIMER;
 
 /* USER CODE END ET */
 
@@ -150,7 +155,7 @@ void Error_Handler(void);
 #define SLOT_CELL_PADDING_X 8
 #define SLOT_CELL_PADDING_Y 8
 #define SLOT_SCROLL_STOPPING_AMOUNT -4
-#define SLOT_ENCODER_START_THRESHOLD 10
+#define SLOT_ENCODER_START_THRESHOLD 3
 
 #define AUX_UART_TIMEOUT 200
 // #define AUX_COIN_UART_HANDLE huart7
@@ -164,9 +169,11 @@ void Error_Handler(void);
 #define MUSIC_COMMAND_MUSIC_WIN   0x03
 #define MUSIC_COMMAND_MUSIC_LOSE  0x04
 #define MUSIC_COMMAND_MUSIC_COIN  0x05
+#define MUSIC_RECOVERY_NS 2500000
 
 #define ADMIN_COMMAND_ADD_COIN 'c'
 #define ADMIN_COMMAND_STOP_MUSIC 's'
+#define ADMIN_COMMAND_RESET_CREDIT 'r'
 
 /* USER CODE END Private defines */
 

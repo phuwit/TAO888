@@ -14,8 +14,6 @@
 #include <stdio.h>
 #include <string.h>
 
-extern TIM_HandleTypeDef NS_TIMER;
-
 BannerText bannerTexts[] = {
     {12, 12, "TAO888", &ILI9341_Font_Terminus12x24b, ILI9341_COLOR_BLACK,
      ILI9341_COLOR_WHITE, 0},
@@ -80,7 +78,7 @@ void TAO888_SlotMachine_Init(ILI9341_HandleTypeDef *lcd) {
 void TAO888_SlotMachine_Update(ILI9341_HandleTypeDef *lcd) {
 	State state = currentState;
 	StateConfig config = stateConfig[state];
-	
+
   if (lastUpdate < MINIMUM_UPDATE_MS) {
     return;
   }
@@ -117,7 +115,8 @@ void TAO888_SlotMachine_Update(ILI9341_HandleTypeDef *lcd) {
   }
 
   if ((config.advanceMicroSecLow != 0) &&
-      (stateTimerSet == false)) {
+      (stateTimerSet == false) &&
+      currentState != WAITING) {
     uint32_t advanceDelayMicroSec =
         config.advanceMicroSecLow;
     if (config.randomAdvanceMicroSecMod > 0) {
@@ -128,18 +127,14 @@ void TAO888_SlotMachine_Update(ILI9341_HandleTypeDef *lcd) {
     }
     Serial_Debug_Printf("setting timer for %d in state %d\r\n",
                         advanceDelayMicroSec, state);
-    __HAL_TIM_SET_AUTORELOAD(&NS_TIMER, advanceDelayMicroSec);
-    HAL_TIM_Base_Start_IT(&NS_TIMER);
+    __HAL_TIM_SET_AUTORELOAD(&SLOT_STATE_TRANSITION_NS_TIMER, advanceDelayMicroSec);
+    HAL_TIM_Base_Start_IT(&SLOT_STATE_TRANSITION_NS_TIMER);
     stateTimerSet = true;
   }
 }
 
 void TAO888_SlotMachine_StartCycle() {
   if ((currentState == WAITING) && (credits >= 10)) {
-    // __HAL_TIM_SET_AUTORELOAD(&NS_TIMER, stateConfig[SHUFFLE].advanceMicroSecLow);
-    // HAL_TIM_Base_Start_IT(&NS_TIMER);
-    // stateTimerSet = true;
-
     Serial_Debug_Printf("starting cycle\r\n");
     credits -= 10;
     currentState = SHUFFLE;
@@ -148,6 +143,9 @@ void TAO888_SlotMachine_StartCycle() {
     TAO888_SlotMachine_SendCommandToAux(&AUX_MUSIC_UART_HANDLE, MUSIC_COMMAND_MUSIC_SPIN);
   } else {
     Serial_Debug_Printf("cannot start cycle\r\n");
+    TAO888_SlotMachine_SendCommandToAux(&AUX_MUSIC_UART_HANDLE, MUSIC_COMMAND_MUSIC_LOSE);
+    __HAL_TIM_SET_AUTORELOAD(&SLOT_MUSIC_RECOVERY_NS_TIMER, MUSIC_RECOVERY_NS);
+    HAL_TIM_Base_Start_IT(&SLOT_MUSIC_RECOVERY_NS_TIMER);
   }
 }
 
@@ -540,7 +538,7 @@ __weak void TAO888_SlotMachine_RoundEndCallback(SlotSymbol *displayedSymbols) {
     if (totalCredits > 0) {
 			int payoutCoins = totalCredits / 10;
 			int remainCredits = totalCredits % 10;
-			
+
 			TAO888_SlotMachine_SendCommandToAux(&AUX_MUSIC_UART_HANDLE, MUSIC_COMMAND_MUSIC_WIN);
 			Serial_Debug_Printf(
 				"Total %d credit(s) → Payout %d credit(s), keep %d credit(s)\r\n",
@@ -594,6 +592,8 @@ void TAO888_SlotMachine_IncrementCredits(uint8_t amount) {
   TAO888_Banner_UpdateCredits(&banner, credits);
   bannerUpdated = true;
   Serial_Debug_Printf("credits = %u\r\n", credits);
+  __HAL_TIM_SET_AUTORELOAD(&SLOT_MUSIC_RECOVERY_NS_TIMER, MUSIC_RECOVERY_NS);
+  HAL_TIM_Base_Start_IT(&SLOT_MUSIC_RECOVERY_NS_TIMER);
 }
 
 void TAO888_SlotMachine_SendCommandToAux(UART_HandleTypeDef* AuxUart, const uint8_t command) {
@@ -610,4 +610,17 @@ void TAO888_SlotMachine_PollRotaryEncoderAndStart(TIM_TypeDef* EncoderHandle) {
   } else if ((currentValue - encoderLastValue) < 0) {
     encoderLastValue = currentValue;
   }
+}
+
+void TAO888_SlotMachine_ResetCredits() {
+  Serial_Debug_Printf("resetting credits\r\n");
+  credits = 0;
+	TAO888_SlotMachine_SendCommandToAux(&AUX_MUSIC_UART_HANDLE, MUSIC_COMMAND_MUSIC_COIN);
+  TAO888_Banner_UpdateCredits(&banner, credits);
+  bannerUpdated = true;
+  Serial_Debug_Printf("credits = %u\r\n", credits);
+}
+
+void TAO888_SlotMachine_RecoverMusic() {
+  TAO888_SlotMachine_SendCommandToAux(&AUX_MUSIC_UART_HANDLE, stateConfig[currentState].stateMusicCommand);
 }
